@@ -1,0 +1,380 @@
+@import "tailwindcss";
+
+/* ============================================================
+   CryptoBill Design System
+   Dark-first, glassmorphism, premium fintech aesthetic
+   ============================================================ */
+
+/* CSS Custom Properties */
+:root {
+  /* Base Colors */
+  --color-bg-primary: #0A0E1A;
+  --color-bg-secondary: #0F1629;
+  --color-bg-tertiary: #151C32;
+  --color-bg-card: rgba(255, 255, 255, 0.03);
+  --color-bg-card-hover: rgba(255, 255, 255, 0.06);
+
+  /* Accent Colors */
+  --color-accent-blue: #3B82F6;
+  --color-accent-emerald: #10B981;
+  --color-accent-violet: #8B5CF6;
+  --color-accent-amber: #F59E0B;
+  --color-accent-rose: #F43F5E;
+  --color-accent-cyan: #06B6D4;
+
+  /* Text Colors */
+  --color-text-primary: #F8FAFC;
+  --color-text-secondary: #94A3B8;
+  --color-text-muted: #64748B;
+
+  /* Border */
+  --color-border: rgba(255, 255, 255, 0.08);
+  --color-border-hover: rgba(255, 255, 255, 0.15);
+
+  /* Glass */
+  --glass-bg: rgba(255, 255, 255, 0.04);
+  --glass-border: rgba(255, 255, 255, 0.08);
+  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+/* ============================================================
+   Base Styles
+   ============================================================ */
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  background-color: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  font-family: var(--font-inter, 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif);
+  overflow-x: hidden;
+}
+
+/* ============================================================
+   Custom Scrollbar
+   ============================================================ */
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+/* Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+}
+
+/* ============================================================
+   Glassmorphism Utilities
+   ============================================================ */
+
+.glass-card {
+  background: var(--glass-bg);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+  box-shadow: var(--glass-shadow);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-card:hover {
+  background: var(--color-bg-card-hover);
+  border-color: var(--color-border-hover);
+}
+
+.glass-card-static {
+  background: var(--glass-bg);
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border: 1px solid var(--glass-border);
+  border-radius: 16px;
+  box-shadow: var(--glass-shadow);
+}
+
+.glass-panel {
+  background: rgba(15, 22, 41, 0.8);
+  backdrop-filter: blur(40px);
+  -webkit-backdrop-filter: blur(40px);
+  border: 1px solid var(--glass-border);
+}
+
+/* ============================================================
+   Gradient Utilities
+   ============================================================ */
+
+.gradient-text {
+  background: linear-gradient(135deg, #3B82F6 0%, #8B5CF6 50%, #EC4899 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.gradient-text-emerald {
+  background: linear-gradient(135deg, #10B981 0%, #06B6D4 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.gradient-text-amber {
+  background: linear-gradient(135deg, #F59E0B 0%, #EF4444 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.gradient-bg-primary {
+  background: linear-gradient(135deg, #3B82F6 0%, #8B5CF6 100%);
+}
+
+.gradient-bg-emerald {
+  background: linear-gradient(135deg, #10B981 0%, #06B6D4 100%);
+}
+
+.gradient-bg-warm {
+  background: linear-gradient(135deg, #F59E0B 0%, #EF4444 100%);
+}
+
+.gradient-bg-card {
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.1) 0%, rgba(139, 92, 246, 0.1) 100%);
+}
+
+.gradient-border {
+  position: relative;
+  background: var(--glass-bg);
+  border-radius: 16px;
+}
+
+.gradient-border::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 16px;
+  padding: 1px;
+  background: linear-gradient(135deg, rgba(59, 130, 246, 0.3), rgba(139, 92, 246, 0.3));
+  mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  mask-composite: exclude;
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  pointer-events: none;
+}
+
+/* ============================================================
+   Animation Keyframes
+   ============================================================ */
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideDown {
+  from { opacity: 0; transform: translateY(-20px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(20px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes scaleIn {
+  from { opacity: 0; transform: scale(0.95); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(59, 130, 246, 0.4); }
+  50% { box-shadow: 0 0 20px 4px rgba(59, 130, 246, 0.2); }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-10px); }
+}
+
+@keyframes spin-slow {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes confetti-fall {
+  0% { transform: translateY(-100%) rotate(0deg); opacity: 1; }
+  100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+}
+
+@keyframes gradient-shift {
+  0% { background-position: 0% 50%; }
+  50% { background-position: 100% 50%; }
+  100% { background-position: 0% 50%; }
+}
+
+/* Animation Utilities */
+.animate-fade-in { animation: fadeIn 0.5s ease-out; }
+.animate-slide-up { animation: slideUp 0.5s ease-out; }
+.animate-slide-down { animation: slideDown 0.5s ease-out; }
+.animate-slide-in-right { animation: slideInRight 0.5s ease-out; }
+.animate-scale-in { animation: scaleIn 0.3s ease-out; }
+.animate-pulse-glow { animation: pulse-glow 2s ease-in-out infinite; }
+.animate-float { animation: float 3s ease-in-out infinite; }
+.animate-spin-slow { animation: spin-slow 8s linear infinite; }
+.animate-gradient { 
+  background-size: 200% 200%; 
+  animation: gradient-shift 3s ease-in-out infinite; 
+}
+
+/* Shimmer for loading states */
+.shimmer {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.03) 0%,
+    rgba(255, 255, 255, 0.08) 50%,
+    rgba(255, 255, 255, 0.03) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s ease-in-out infinite;
+}
+
+/* ============================================================
+   Hover Effects
+   ============================================================ */
+
+.hover-lift {
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1), 
+              box-shadow 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.hover-lift:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.4);
+}
+
+.hover-glow {
+  transition: box-shadow 0.3s ease;
+}
+
+.hover-glow:hover {
+  box-shadow: 0 0 24px rgba(59, 130, 246, 0.15);
+}
+
+.hover-scale {
+  transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.hover-scale:hover {
+  transform: scale(1.02);
+}
+
+.hover-scale:active {
+  transform: scale(0.98);
+}
+
+/* ============================================================
+   Focus Styles
+   ============================================================ */
+
+.focus-ring:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 2px var(--color-bg-primary), 0 0 0 4px var(--color-accent-blue);
+}
+
+/* ============================================================
+   Floating Orb Background
+   ============================================================ */
+
+.orb {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(80px);
+  opacity: 0.3;
+  pointer-events: none;
+}
+
+.orb-blue {
+  background: radial-gradient(circle, #3B82F6 0%, transparent 70%);
+}
+
+.orb-violet {
+  background: radial-gradient(circle, #8B5CF6 0%, transparent 70%);
+}
+
+.orb-emerald {
+  background: radial-gradient(circle, #10B981 0%, transparent 70%);
+}
+
+/* ============================================================
+   Category Icon Gradients
+   ============================================================ */
+
+.category-electricity { background: linear-gradient(135deg, #FFB800, #FF8C00); }
+.category-water { background: linear-gradient(135deg, #00B4D8, #0077B6); }
+.category-gas { background: linear-gradient(135deg, #FF6B35, #D62828); }
+.category-mobile { background: linear-gradient(135deg, #7209B7, #560BAD); }
+.category-dth { background: linear-gradient(135deg, #E91E8C, #C2185B); }
+.category-broadband { background: linear-gradient(135deg, #3B82F6, #1D4ED8); }
+.category-lpg { background: linear-gradient(135deg, #EF4444, #B91C1C); }
+.category-fastag { background: linear-gradient(135deg, #10B981, #059669); }
+.category-credit-card { background: linear-gradient(135deg, #6366F1, #4338CA); }
+.category-insurance { background: linear-gradient(135deg, #14B8A6, #0D9488); }
+.category-municipal { background: linear-gradient(135deg, #6366F1, #4F46E5); }
+.category-education { background: linear-gradient(135deg, #A855F7, #7C3AED); }
+.category-rent { background: linear-gradient(135deg, #F43F5E, #E11D48); }
+
+/* ============================================================
+   Misc Utilities
+   ============================================================ */
+
+/* Hide scrollbar but allow scrolling */
+.scrollbar-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.scrollbar-hide::-webkit-scrollbar {
+  display: none;
+}
+
+/* Text ellipsis */
+.text-ellipsis-2 {
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+/* Prevent text selection on interactive elements */
+.select-none-children * {
+  user-select: none;
+}

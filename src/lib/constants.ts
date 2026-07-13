@@ -23,7 +23,7 @@ export const SEPOLIA_CHAIN: ChainConfig = {
 // Token Addresses on Base Sepolia
 // ============================================================
 
-export const USDC_ADDRESS = '0x036CbD53842c5426634e7929541eC2318f3dCF7e'; // USDC on Base Sepolia
+export const USDC_ADDRESS = '0x4095fE4f1E636f11A95820BA2bB87F335Bd1040d'; // Custom P2P.me USDC on Base Sepolia
 export const USDT_ADDRESS = '0xaA8E23Fb1079EA71e0a56F48a2AA51851D8433D0'; // Placeholder
 export const DAI_ADDRESS = '0x3e622317f8C93f7328150cf4B8516Ba613D2e824'; // Placeholder
 export const WETH_ADDRESS = '0x4200000000000000000000000000000000000006'; // Wrapped Ether on Base Sepolia

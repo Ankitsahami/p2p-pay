@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { usePrivy } from '@/providers/privy-provider';
 import { useWallets } from '@privy-io/react-auth';
+import { useSmartWallets } from '@privy-io/react-auth/smart-wallets';
 import { useUserStore } from '@/stores/user-store';
 import { useNotificationStore } from '@/stores/notification-store';
 import { NotificationService } from '@/services/notification-service';
@@ -14,6 +15,7 @@ export const useAuth = () => {
   const router = useRouter();
   const privy = usePrivy();
   const { wallets } = useWallets();
+  const { client: smartWalletClient } = useSmartWallets();
   const { user, isAuthenticated, setUser, logout: clearStore } = useUserStore();
   const { addNotification } = useNotificationStore();
 
@@ -25,10 +27,8 @@ export const useAuth = () => {
         const email = privyUser.email?.address || privyUser.google?.email || '';
         const name = privyUser.google?.name || privyUser.email?.address?.split('@')[0] || 'User';
         const avatar = (privyUser.google as any)?.picture || '';
-        const smartWallet = wallets?.find(
-          (w) => w.walletClientType === 'smart_wallet' || w.connectorType === 'smart_wallet'
-        );
-        const walletAddress = smartWallet?.address || wallets?.find(
+        const smartWalletAddress = smartWalletClient?.account?.address;
+        const walletAddress = smartWalletAddress || wallets?.find(
           (w) => w.walletClientType === 'privy' || w.connectorType === 'embedded'
         )?.address || (privyUser as any).wallet?.address || '';
         
@@ -78,10 +78,8 @@ export const useAuth = () => {
     }
   };
 
-  const smartWallet = wallets?.find(
-    (w) => w.walletClientType === 'smart_wallet' || w.connectorType === 'smart_wallet'
-  );
-  const embeddedWalletAddress = smartWallet?.address || wallets?.find(
+  const smartWalletAddress = smartWalletClient?.account?.address;
+  const embeddedWalletAddress = smartWalletAddress || wallets?.find(
     (w) => w.walletClientType === 'privy' || w.connectorType === 'embedded'
   )?.address || (privy.user as any)?.wallet?.address || user?.walletAddress || '';
 

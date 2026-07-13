@@ -30,7 +30,7 @@ export default function CategoryPayPage() {
   const { deductBalance } = useWallet();
   const { saveBiller, isBillerSaved, preferences } = useUserStore();
   const { wallets } = useWallets();
-  const { smartWallet } = useSmartWallets();
+  const { client: smartWalletClient } = useSmartWallets();
 
   const categoryId = params.category as string;
   const urlProviderId = searchParams.get('providerId');
@@ -113,17 +113,20 @@ export default function CategoryPayPage() {
 
     try {
       let walletClient = undefined;
-      const activeWallet = smartWallet || wallets.find(
-        (w) => w.walletClientType === 'privy' || w.connectorType === 'embedded'
-      );
-
-      if (activeWallet) {
-        const provider = await activeWallet.getEthereumProvider();
-        walletClient = createWalletClient({
-          account: activeWallet.address as `0x${string}`,
-          chain: baseSepolia,
-          transport: custom(provider),
-        });
+      if (smartWalletClient) {
+        walletClient = smartWalletClient;
+      } else {
+        const activeWallet = wallets.find(
+          (w) => w.walletClientType === 'privy' || w.connectorType === 'embedded'
+        );
+        if (activeWallet) {
+          const provider = await activeWallet.getEthereumProvider();
+          walletClient = createWalletClient({
+            account: activeWallet.address as `0x${string}`,
+            chain: baseSepolia,
+            transport: custom(provider),
+          });
+        }
       }
 
       // Create initial order details

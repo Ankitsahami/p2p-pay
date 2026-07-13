@@ -23,7 +23,7 @@ export default function SendPage() {
   const { walletAddress } = useAuth();
   const { getBalance, deductBalance, activeCurrency, formatFiatValue } = useWallet();
   const { wallets } = useWallets();
-  const { smartWallet } = useSmartWallets();
+  const { client: smartWalletClient } = useSmartWallets();
 
   // Form State
   const [recipient, setRecipient] = React.useState('');
@@ -78,17 +78,20 @@ export default function SendPage() {
 
     try {
       let walletClient = undefined;
-      const activeWallet = smartWallet || wallets.find(
-        (w) => w.walletClientType === 'privy' || w.connectorType === 'embedded'
-      );
-
-      if (activeWallet) {
-        const provider = await activeWallet.getEthereumProvider();
-        walletClient = createWalletClient({
-          account: activeWallet.address as `0x${string}`,
-          chain: baseSepolia,
-          transport: custom(provider),
-        });
+      if (smartWalletClient) {
+        walletClient = smartWalletClient;
+      } else {
+        const activeWallet = wallets.find(
+          (w) => w.walletClientType === 'privy' || w.connectorType === 'embedded'
+        );
+        if (activeWallet) {
+          const provider = await activeWallet.getEthereumProvider();
+          walletClient = createWalletClient({
+            account: activeWallet.address as `0x${string}`,
+            chain: baseSepolia,
+            transport: custom(provider),
+          });
+        }
       }
 
       await WalletService.sendTransaction(recipient, amount, selectedToken, walletAddress, walletClient);

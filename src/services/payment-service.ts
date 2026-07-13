@@ -99,7 +99,7 @@ export const PaymentService = {
           recipientAddr: walletAddress as `0x${string}`,
           amount: totalUsdcVal,
           fiatAmount: parseUnits(quote.fiatAmount.toString(), 6),
-          fiatAmountLimit: 0n,
+          fiatAmountLimit: BigInt(0),
         });
 
         if (placeResult.isErr()) {

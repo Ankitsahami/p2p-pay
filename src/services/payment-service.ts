@@ -114,7 +114,9 @@ export const PaymentService = {
           await orders.setSellOrderUpi.execute({
             walletClient,
             orderId: BigInt(orderId),
-            upiId: providerUpi,
+            paymentAddress: providerUpi,
+            merchantPublicKey: '0x0000000000000000000000000000000000000000000000000000000000000000',
+            updatedAmount: totalUsdcVal,
           });
         } catch (upiErr) {
           console.error('Error setting UPI destination:', upiErr);

@@ -4,6 +4,7 @@ import * as React from 'react';
 import { useRouter } from 'next/navigation';
 import toast from 'react-hot-toast';
 import { usePrivy } from '@/providers/privy-provider';
+import { useWallets } from '@privy-io/react-auth';
 import { useUserStore } from '@/stores/user-store';
 import { useNotificationStore } from '@/stores/notification-store';
 import { NotificationService } from '@/services/notification-service';
@@ -12,6 +13,7 @@ import { type User } from '@/types';
 export const useAuth = () => {
   const router = useRouter();
   const privy = usePrivy();
+  const { wallets } = useWallets();
   const { user, isAuthenticated, setUser, logout: clearStore } = useUserStore();
   const { addNotification } = useNotificationStore();
 
@@ -23,9 +25,9 @@ export const useAuth = () => {
         const email = privyUser.email?.address || privyUser.google?.email || '';
         const name = privyUser.google?.name || privyUser.email?.address?.split('@')[0] || 'User';
         const avatar = (privyUser.google as any)?.picture || '';
-        const walletAddress = privyUser.wallets?.find(
+        const walletAddress = wallets?.find(
           (w) => w.walletClientType === 'privy' || w.connectorType === 'embedded'
-        )?.address || privyUser.wallet?.address || '';
+        )?.address || (privyUser as any).wallet?.address || '';
         
         const mappedUser: User = {
           id: privyUser.id,
@@ -73,9 +75,9 @@ export const useAuth = () => {
     }
   };
 
-  const embeddedWalletAddress = privy.user?.wallets?.find(
+  const embeddedWalletAddress = wallets?.find(
     (w) => w.walletClientType === 'privy' || w.connectorType === 'embedded'
-  )?.address || privy.user?.wallet?.address || user?.walletAddress || '';
+  )?.address || (privy.user as any)?.wallet?.address || user?.walletAddress || '';
 
   return {
     ready: privy.ready,

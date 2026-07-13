@@ -200,7 +200,7 @@ export const PaymentService = {
         try {
           const orderRes = await orders.getOrder({ orderId: BigInt(order.orderId) });
           if (orderRes.isOk()) {
-            const rawStatus = orderRes.value.status;
+            const rawStatus = orderRes.value.status as any;
             if (rawStatus === 'completed' || rawStatus === 'COMPLETED' || String(rawStatus) === '5') {
               status = 'completed';
               break;

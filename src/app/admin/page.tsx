@@ -9,13 +9,13 @@ import { Users, Wallet, ArrowLeftRight, TrendingUp } from 'lucide-react';
 
 export default function AdminPage() {
   const [stats, setStats] = React.useState({
-    totalUsers: 14,
-    activeWallets: 8,
-    totalTransactions: 24,
-    totalVolume: 12450.0,
-    volumeToday: 1850.0,
-    successRate: 98.4,
-    recentTx: MOCK_TRANSACTIONS.slice(0, 6)
+    totalUsers: 0,
+    activeWallets: 0,
+    totalTransactions: 0,
+    totalVolume: 0.0,
+    volumeToday: 0.0,
+    successRate: 100.0,
+    recentTx: [] as any[]
   });
   const [isLoading, setIsLoading] = React.useState(true);
 
@@ -65,11 +65,11 @@ export default function AdminPage() {
           });
 
           setStats({
-            totalUsers: uniqueUsers + 3,
+            totalUsers: uniqueUsers,
             activeWallets: uniqueUsers,
             totalTransactions,
             totalVolume,
-            volumeToday: totalVolume / totalTransactions * 2 || 1200,
+            volumeToday: totalTransactions > 0 ? totalVolume / totalTransactions : 0.0,
             successRate: 100.0,
             recentTx
           });

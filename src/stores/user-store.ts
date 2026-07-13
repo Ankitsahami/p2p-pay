@@ -28,7 +28,7 @@ export const useUserStore = create<UserState>()(
         biometricAuth: false,
         theme: 'dark',
       },
-      savedBillers: MOCK_SAVED_BILLERS,
+      savedBillers: [],
       isAuthenticated: false,
 
       setUser: (user) => {

@@ -41,7 +41,7 @@ export const Sidebar = ({ className }: SidebarProps) => {
     { label: 'Settings', href: '/dashboard/settings', icon: SettingsIcon },
   ];
 
-  const isAdmin = true; // For simulation
+  const isAdmin = user?.email ? ['ankitsahami008@gmail.com', 'admin@cryptobill.com', 'admin@p2p.me'].includes(user.email.toLowerCase()) : false;
 
   const handleLogout = async () => {
     await logout();

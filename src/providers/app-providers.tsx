@@ -20,6 +20,7 @@ const queryClient = new QueryClient({
 const rpcUrl = process.env.NEXT_PUBLIC_BASE_RPC_URL || 'https://sepolia.base.org';
 const diamondAddress = (process.env.NEXT_PUBLIC_P2P_DIAMOND_ADDRESS || '0xeb0BB8E3c014D915D9B2df03aBB130a1Fb44beb9') as `0x${string}`;
 const usdcAddress = (process.env.NEXT_PUBLIC_USDC_ADDRESS || '0x036CbD53842c5426634e7929541eC2318f3dCF7e') as `0x${string}`;
+const p2pTokenAddress = (process.env.NEXT_PUBLIC_P2P_TOKEN_ADDRESS || '0x036CbD53842c5426634e7929541eC2318f3dCF7e') as `0x${string}`;
 const subgraphUrl = process.env.NEXT_PUBLIC_P2P_SUBGRAPH_URL || '';
 
 const publicClient = createPublicClient({
@@ -36,6 +37,7 @@ export const AppProviders = ({ children }: { children: React.ReactNode }) => {
           subgraphUrl={subgraphUrl}
           diamondAddress={diamondAddress}
           usdcAddress={usdcAddress}
+          p2pTokenAddress={p2pTokenAddress}
         >
           {children}
           <Toaster

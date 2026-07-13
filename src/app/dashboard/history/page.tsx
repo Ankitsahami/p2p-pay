@@ -9,15 +9,34 @@ import { Badge } from '@/components/ui/badge';
 import { Modal } from '@/components/ui/modal';
 import { Button } from '@/components/ui/button';
 import { useWallet } from '@/hooks/use-wallet';
-import { MOCK_TRANSACTIONS } from '@/lib/mock-data';
+import { useAuth } from '@/hooks/use-auth';
+import { WalletService } from '@/services/wallet-service';
 import { formatCurrency, getRelativeTime, formatCrypto, truncateAddress, getExplorerUrl } from '@/lib/utils';
 import { type Transaction } from '@/types';
 
 export default function HistoryPage() {
   const { activeCurrency } = useWallet();
+  const { walletAddress } = useAuth();
+  const [transactions, setTransactions] = React.useState<Transaction[]>([]);
   const [search, setSearch] = React.useState('');
   const [activeTab, setActiveTab] = React.useState('all');
   const [selectedTx, setSelectedTx] = React.useState<Transaction | null>(null);
+
+  React.useEffect(() => {
+    if (!walletAddress) {
+      setTransactions([]);
+      return;
+    }
+    const fetchTxs = async () => {
+      try {
+        const res = await WalletService.getTransactionHistory(walletAddress, 1, 100);
+        setTransactions(res.items);
+      } catch (err) {
+        console.error('Error fetching transactions history:', err);
+      }
+    };
+    fetchTxs();
+  }, [walletAddress]);
 
   const tabs = [
     { id: 'all', label: 'All Operations' },
@@ -43,7 +62,7 @@ export default function HistoryPage() {
   };
 
   const filteredTransactions = React.useMemo(() => {
-    return MOCK_TRANSACTIONS.filter((tx) => {
+    return transactions.filter((tx) => {
       // 1. Tab category filter match
       const tabMatch = activeTab === 'all' || tx.type === activeTab;
       
@@ -57,7 +76,7 @@ export default function HistoryPage() {
 
       return tabMatch && searchMatch;
     });
-  }, [activeTab, search]);
+  }, [transactions, activeTab, search]);
 
   return (
     <div className="flex flex-col gap-6 md:gap-8 select-none text-slate-800">

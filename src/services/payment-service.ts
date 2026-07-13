@@ -109,6 +109,36 @@ export const PaymentService = {
         const txHash = placeResult.value.hash;
         const orderId = placeResult.value.meta?.orderId?.toString() || generateId('P2P');
 
+        // Record the transaction in localStorage
+        try {
+          const key = `p2p-pay-txs-${walletAddress.toLowerCase()}`;
+          const localData = typeof window !== 'undefined' ? localStorage.getItem(key) : null;
+          const localTxs = localData ? JSON.parse(localData) : [];
+          
+          localTxs.push({
+            id: orderId,
+            type: 'bill_payment',
+            category: billDetails.provider.category,
+            merchant: billDetails.provider.name,
+            description: `${billDetails.provider.name} Bill Payment`,
+            fiatAmount: billDetails.amount,
+            fiatCurrency: billDetails.currency,
+            cryptoAmount: quote.totalCrypto,
+            token: 'USDC',
+            network: 'Base Sepolia',
+            status: 'pending',
+            txHash,
+            walletAddress,
+            timestamp: new Date().toISOString(),
+          });
+          
+          if (typeof window !== 'undefined') {
+            localStorage.setItem(key, JSON.stringify(localTxs));
+          }
+        } catch (saveErr) {
+          console.error('Error saving payment transaction:', saveErr);
+        }
+
         // 3. Set UPI destination
         try {
           await orders.setSellOrderUpi.execute({
@@ -146,6 +176,35 @@ export const PaymentService = {
     await delay(1500);
 
     const orderId = generateId('P2P');
+
+    // Record mock transaction in localStorage
+    try {
+      const key = `p2p-pay-txs-${walletAddress.toLowerCase()}`;
+      const localData = typeof window !== 'undefined' ? localStorage.getItem(key) : null;
+      const localTxs = localData ? JSON.parse(localData) : [];
+      
+      localTxs.push({
+        id: orderId,
+        type: 'bill_payment',
+        category: billDetails.provider.category,
+        merchant: billDetails.provider.name,
+        description: `${billDetails.provider.name} Bill Payment`,
+        fiatAmount: billDetails.amount,
+        fiatCurrency: billDetails.currency,
+        cryptoAmount: quote.totalCrypto,
+        token: 'USDC',
+        network: 'Base Sepolia',
+        status: 'pending',
+        walletAddress,
+        timestamp: new Date().toISOString(),
+      });
+      
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(key, JSON.stringify(localTxs));
+      }
+    } catch (saveErr) {
+      console.error('Error saving mock payment transaction:', saveErr);
+    }
     
     return {
       orderId,
@@ -223,6 +282,26 @@ export const PaymentService = {
       }
 
       onStatusChange(status);
+
+      // Update transaction status in localStorage
+      try {
+        const walletAddress = order.walletAddress || (order as any).recipientAddr || '';
+        if (walletAddress) {
+          const key = `p2p-pay-txs-${walletAddress.toLowerCase()}`;
+          const localData = typeof window !== 'undefined' ? localStorage.getItem(key) : null;
+          if (localData) {
+            const localTxs = JSON.parse(localData);
+            const txIndex = localTxs.findIndex((tx: any) => tx.id === order.orderId);
+            if (txIndex !== -1) {
+              localTxs[txIndex].status = status;
+              localStorage.setItem(key, JSON.stringify(localTxs));
+            }
+          }
+        }
+      } catch (updateErr) {
+        console.error('Error updating transaction status in localStorage:', updateErr);
+      }
+
       return {
         ...order,
         status,
@@ -254,6 +333,26 @@ export const PaymentService = {
 
     // Stage 6: Finished
     onStatusChange('completed');
+
+    // Update mock transaction status in localStorage
+    try {
+      const walletAddress = order.walletAddress || (order as any).recipientAddr || '';
+      if (walletAddress) {
+        const key = `p2p-pay-txs-${walletAddress.toLowerCase()}`;
+        const localData = typeof window !== 'undefined' ? localStorage.getItem(key) : null;
+        if (localData) {
+          const localTxs = JSON.parse(localData);
+          const txIndex = localTxs.findIndex((tx: any) => tx.id === order.orderId);
+          if (txIndex !== -1) {
+            localTxs[txIndex].status = 'completed';
+            localTxs[txIndex].txHash = mockTxHash;
+            localStorage.setItem(key, JSON.stringify(localTxs));
+          }
+        }
+      }
+    } catch (updateErr) {
+      console.error('Error updating mock transaction status in localStorage:', updateErr);
+    }
 
     const completedOrder: PaymentOrder = {
       ...order,

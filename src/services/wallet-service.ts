@@ -75,19 +75,55 @@ export const WalletService = {
     page: number = 1,
     pageSize: number = 10
   ): Promise<{ items: Transaction[]; total: number; hasMore: boolean }> {
-    await delay(800);
+    if (!address) {
+      return { items: [], total: 0, hasMore: false };
+    }
 
-    const start = (page - 1) * pageSize;
-    const end = start + pageSize;
-    const filtered = MOCK_TRANSACTIONS.filter(
-      (tx) => tx.walletAddress.toLowerCase() === address.toLowerCase()
-    );
+    try {
+      const key = `p2p-pay-txs-${address.toLowerCase()}`;
+      const localData = typeof window !== 'undefined' ? localStorage.getItem(key) : null;
+      const localTxs: Transaction[] = localData ? JSON.parse(localData) : [];
 
-    return {
-      items: filtered.slice(start, end),
-      total: filtered.length,
-      hasMore: end < filtered.length,
-    };
+      // Sort by timestamp descending
+      localTxs.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
+
+      const start = (page - 1) * pageSize;
+      const end = start + pageSize;
+
+      return {
+        items: localTxs.slice(start, end),
+        total: localTxs.length,
+        hasMore: end < localTxs.length,
+      };
+    } catch (e) {
+      console.error('Error fetching transactions from localStorage:', e);
+      return { items: [], total: 0, hasMore: false };
+    }
+  },
+
+  /**
+   * Record a new transaction in localStorage
+   */
+  saveTransaction(address: string, tx: Omit<Transaction, 'walletAddress'>): void {
+    if (!address) return;
+    try {
+      const key = `p2p-pay-txs-${address.toLowerCase()}`;
+      const localData = typeof window !== 'undefined' ? localStorage.getItem(key) : null;
+      const localTxs: Transaction[] = localData ? JSON.parse(localData) : [];
+
+      const newTx: Transaction = {
+        ...tx,
+        walletAddress: address,
+      };
+
+      localTxs.push(newTx);
+      
+      if (typeof window !== 'undefined') {
+        localStorage.setItem(key, JSON.stringify(localTxs));
+      }
+    } catch (e) {
+      console.error('Error saving transaction to localStorage:', e);
+    }
   },
 
   /**
@@ -127,6 +163,23 @@ export const WalletService = {
 
         // Wait for receipt
         await publicClient.waitForTransactionReceipt({ hash: txHash });
+
+        // Save transaction to local storage
+        WalletService.saveTransaction(walletAddress, {
+          id: txHash,
+          type: 'send',
+          description: `Sent ${amount} ${token.symbol} to ${to.slice(0, 6)}...${to.slice(-4)}`,
+          fiatAmount: numAmount * WalletService.getTokenPrice(token.symbol, 'INR'),
+          fiatCurrency: 'INR',
+          cryptoAmount: amount,
+          token: token.symbol,
+          network: 'Base Sepolia',
+          status: 'completed',
+          txHash,
+          toAddress: to,
+          timestamp: new Date().toISOString(),
+        });
+
         return { txHash };
       } catch (err: any) {
         console.error('Send transaction error:', err);
@@ -137,6 +190,22 @@ export const WalletService = {
     // Fallback Mock Mode
     await delay(2000);
     const mockHash = '0x' + Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
+    
+    WalletService.saveTransaction(walletAddress, {
+      id: mockHash,
+      type: 'send',
+      description: `Sent ${amount} ${token.symbol} to ${to.slice(0, 6)}...${to.slice(-4)}`,
+      fiatAmount: numAmount * WalletService.getTokenPrice(token.symbol, 'INR'),
+      fiatCurrency: 'INR',
+      cryptoAmount: amount,
+      token: token.symbol,
+      network: 'Base Sepolia',
+      status: 'completed',
+      txHash: mockHash,
+      toAddress: to,
+      timestamp: new Date().toISOString(),
+    });
+
     return { txHash: mockHash };
   },
 

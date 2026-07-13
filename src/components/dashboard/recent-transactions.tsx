@@ -8,18 +8,32 @@ import { Badge } from '@/components/ui/badge';
 import { Modal } from '@/components/ui/modal';
 import { Button } from '@/components/ui/button';
 import { useWallet } from '@/hooks/use-wallet';
-import { MOCK_TRANSACTIONS } from '@/lib/mock-data';
+import { useAuth } from '@/hooks/use-auth';
+import { WalletService } from '@/services/wallet-service';
 import { formatCurrency, getRelativeTime, formatCrypto, truncateAddress, getExplorerUrl } from '@/lib/utils';
 import { type Transaction } from '@/types';
 
 export const RecentTransactions = () => {
   const { activeCurrency } = useWallet();
+  const { walletAddress } = useAuth();
+  const [transactions, setTransactions] = React.useState<Transaction[]>([]);
   const [selectedTx, setSelectedTx] = React.useState<Transaction | null>(null);
 
-  // Get last 5 transactions
-  const transactions = React.useMemo(() => {
-    return MOCK_TRANSACTIONS.slice(0, 5);
-  }, []);
+  React.useEffect(() => {
+    if (!walletAddress) {
+      setTransactions([]);
+      return;
+    }
+    const fetchTxs = async () => {
+      try {
+        const res = await WalletService.getTransactionHistory(walletAddress, 1, 5);
+        setTransactions(res.items);
+      } catch (err) {
+        console.error('Error loading recent transactions:', err);
+      }
+    };
+    fetchTxs();
+  }, [walletAddress]);
 
   const getIcon = (type: string) => {
     const styles = 'w-5 h-5 flex-shrink-0';

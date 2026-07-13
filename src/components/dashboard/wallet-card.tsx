@@ -37,7 +37,7 @@ export const WalletCard = () => {
         <div className="flex flex-col gap-1.5">
           <span className="text-xs font-bold text-blue-200 uppercase tracking-widest flex items-center gap-1.5">
             <Shield className="w-3.5 h-3.5 text-blue-300" />
-            Smart Contract Account
+            Embedded EOA Wallet
           </span>
           <button
             onClick={handleCopy}

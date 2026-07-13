@@ -8,12 +8,12 @@ import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useWallet } from '@/hooks/use-wallet';
 import { useAuth } from '@/hooks/use-auth';
-import { formatCurrency, truncateAddress, copyToClipboard } from '@/lib/utils';
+import { formatCurrency, formatCrypto, truncateAddress, copyToClipboard } from '@/lib/utils';
 
 export const WalletCard = () => {
   const router = useRouter();
   const { walletAddress } = useAuth();
-  const { totalFiatValue, activeCurrency } = useWallet();
+  const { totalFiatValue, activeCurrency, getBalance } = useWallet();
   const [copied, setCopied] = React.useState(false);
 
   const handleCopy = async () => {

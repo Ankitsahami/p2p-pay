@@ -22,7 +22,7 @@ export const useAuth = () => {
         const privyUser = privy.user;
         const email = privyUser.email?.address || privyUser.google?.email || '';
         const name = privyUser.google?.name || privyUser.email?.address?.split('@')[0] || 'User';
-        const avatar = privyUser.google?.picture || '';
+        const avatar = (privyUser.google as any)?.picture || '';
         const walletAddress = privyUser.wallets?.find(
           (w) => w.walletClientType === 'privy' || w.connectorType === 'embedded'
         )?.address || privyUser.wallet?.address || '';

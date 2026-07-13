@@ -1,5 +1,19 @@
 @import "tailwindcss";
 
+@theme {
+  --color-blue-50: #F8F7FF;
+  --color-blue-100: #F0EFFF;
+  --color-blue-200: #D8D4FF;
+  --color-blue-300: #B8B0FF;
+  --color-blue-400: #5B52D9;
+  --color-blue-500: #3B32B3; /* P2P Brand Purple */
+  --color-blue-600: #2B2391;
+  --color-blue-700: #1D186E;
+  --color-blue-800: #120F4C;
+  --color-blue-900: #0B0A33;
+  --color-blue-950: #06051E;
+}
+
 /* ============================================================
    CryptoBill Design System
    Dark-first, glassmorphism, premium fintech aesthetic
@@ -8,33 +22,43 @@
 /* CSS Custom Properties */
 :root {
   /* Base Colors */
-  --color-bg-primary: #0A0E1A;
-  --color-bg-secondary: #0F1629;
-  --color-bg-tertiary: #151C32;
-  --color-bg-card: rgba(255, 255, 255, 0.03);
-  --color-bg-card-hover: rgba(255, 255, 255, 0.06);
+  --color-bg-primary: #F8F9FC;
+  --color-bg-secondary: #FFFFFF;
+  --color-bg-tertiary: #F1F5F9;
+  --color-bg-card: #FFFFFF;
+  --color-bg-card-hover: rgba(0, 0, 0, 0.02);
 
   /* Accent Colors */
-  --color-accent-blue: #3B82F6;
+  --color-accent-blue: #3B32B3;
+  --color-accent-orange: #FF4500;
   --color-accent-emerald: #10B981;
-  --color-accent-violet: #8B5CF6;
+  --color-accent-violet: #6366F1;
   --color-accent-amber: #F59E0B;
   --color-accent-rose: #F43F5E;
   --color-accent-cyan: #06B6D4;
 
   /* Text Colors */
-  --color-text-primary: #F8FAFC;
-  --color-text-secondary: #94A3B8;
-  --color-text-muted: #64748B;
+  --color-text-primary: #0F172A;
+  --color-text-secondary: #475569;
+  --color-text-muted: #94A3B8;
 
   /* Border */
-  --color-border: rgba(255, 255, 255, 0.08);
-  --color-border-hover: rgba(255, 255, 255, 0.15);
+  --color-border: #E2E8F0;
+  --color-border-hover: #CBD5E1;
 
   /* Glass */
-  --glass-bg: rgba(255, 255, 255, 0.04);
-  --glass-border: rgba(255, 255, 255, 0.08);
-  --glass-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+  --glass-bg: rgba(255, 255, 255, 0.8);
+  --glass-border: rgba(0, 0, 0, 0.06);
+  --glass-shadow: 0 8px 30px rgba(0, 0, 0, 0.04);
+
+  /* Font Families */
+  --font-sans: var(--font-inter), 'Inter', -apple-system, sans-serif;
+  --font-serif: var(--font-playfair), 'Playfair Display', Georgia, serif;
+
+  /* Mindloop Template Variables */
+  --hero-subtitle: 210 17% 20%;
+  --background: 0 0% 100%;
+  --foreground: 0 0% 0%;
 }
 
 /* ============================================================
@@ -54,7 +78,7 @@ html {
 body {
   background-color: var(--color-bg-primary);
   color: var(--color-text-primary);
-  font-family: var(--font-inter, 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif);
+  font-family: var(--font-sans);
   overflow-x: hidden;
 }
 
@@ -91,7 +115,7 @@ body {
    ============================================================ */
 
 .glass-card {
-  background: var(--glass-bg);
+  background-color: var(--glass-bg);
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
   border: 1px solid var(--glass-border);
@@ -101,12 +125,12 @@ body {
 }
 
 .glass-card:hover {
-  background: var(--color-bg-card-hover);
+  background-color: var(--color-bg-card-hover);
   border-color: var(--color-border-hover);
 }
 
 .glass-card-static {
-  background: var(--glass-bg);
+  background-color: var(--glass-bg);
   backdrop-filter: blur(24px);
   -webkit-backdrop-filter: blur(24px);
   border: 1px solid var(--glass-border);
@@ -373,6 +397,66 @@ body {
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
+
+/* Prevent text selection on interactive elements */
+.select-none-children * {
+  user-select: none;
+}
+
+/* Custom dark surrealism styles */
+.font-serif {
+  font-family: var(--font-serif);
+}
+
+.grain-overlay {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.65' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+  opacity: 0.05;
+  mix-blend-mode: overlay;
+  pointer-events: none;
+  z-index: 9999;
+}
+
+.chrome-blue {
+  filter: sepia(1) hue-rotate(190deg) saturate(15) brightness(0.8) contrast(1.2);
+}
+
+/* Liquid Glass Effect */
+.liquid-glass {
+  background: rgba(255, 255, 255, 0.01);
+  background-blend-mode: luminosity;
+  backdrop-filter: blur(4px);
+  -webkit-backdrop-filter: blur(4px);
+  border: none;
+  box-shadow: inset 0 1px 1px rgba(255, 255, 255, 0.1);
+  position: relative;
+  overflow: hidden;
+}
+.liquid-glass::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  padding: 1.4px;
+  background: linear-gradient(
+    180deg,
+    rgba(255, 255, 255, 0.45) 0%,
+    rgba(255, 255, 255, 0.15) 20%,
+    rgba(255, 255, 255, 0) 40%,
+    rgba(255, 255, 255, 0) 60%,
+    rgba(255, 255, 255, 0.15) 80%,
+    rgba(255, 255, 255, 0.45) 100%
+  );
+  -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+  -webkit-mask-composite: xor;
+  mask-composite: exclude;
+  pointer-events: none;
+}
+
+
 
 /* Prevent text selection on interactive elements */
 .select-none-children * {

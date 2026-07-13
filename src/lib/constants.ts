@@ -1,32 +1,32 @@
 import { type ChainConfig, type Token } from '@/types';
 
 // ============================================================
-// Chain Configuration — Base Only
+// Chain Configuration — Base Sepolia Testnet
 // ============================================================
 
-export const BASE_CHAIN_ID = 8453;
+export const SEPOLIA_CHAIN_ID = 84532;
 
-export const BASE_CHAIN: ChainConfig = {
-  id: 8453,
-  name: 'Base',
-  shortName: 'BASE',
-  rpcUrl: process.env.NEXT_PUBLIC_BASE_RPC_URL || 'https://mainnet.base.org',
-  explorerUrl: 'https://basescan.org',
+export const SEPOLIA_CHAIN: ChainConfig = {
+  id: 84532,
+  name: 'Base Sepolia Testnet',
+  shortName: 'BASE_SEPOLIA',
+  rpcUrl: process.env.NEXT_PUBLIC_BASE_RPC_URL || 'https://sepolia.base.org',
+  explorerUrl: 'https://sepolia.basescan.org',
   nativeCurrency: {
-    name: 'Ether',
+    name: 'Sepolia Ether',
     symbol: 'ETH',
     decimals: 18,
   },
 };
 
 // ============================================================
-// Token Addresses on Base
+// Token Addresses on Base Sepolia
 // ============================================================
 
-export const USDC_ADDRESS = '0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913'; // USDC on Base
-export const USDT_ADDRESS = '0xfde4C96c8593536E31F229EA8f37b2ADa2699bb2'; // USDT on Base
-export const DAI_ADDRESS = '0x50c5725949A6F0c72E6C4a641F24049A917DB0Cb'; // DAI on Base
-export const WETH_ADDRESS = '0x4200000000000000000000000000000000000006'; // WETH on Base
+export const USDC_ADDRESS = '0x036CbD53842c5426634e7929541eC2318f3dCF7e'; // USDC on Base Sepolia
+export const USDT_ADDRESS = '0xaA8E23Fb1079EA71e0a56F48a2AA51851D8433D0'; // Placeholder
+export const DAI_ADDRESS = '0x3e622317f8C93f7328150cf4B8516Ba613D2e824'; // Placeholder
+export const WETH_ADDRESS = '0x4200000000000000000000000000000000000006'; // Wrapped Ether on Base Sepolia
 
 // ============================================================
 // Supported Tokens
@@ -39,26 +39,8 @@ export const TOKENS: Token[] = [
     name: 'USD Coin',
     decimals: 6,
     icon: '/tokens/usdc.svg',
-    chainId: BASE_CHAIN_ID,
+    chainId: SEPOLIA_CHAIN_ID,
     coingeckoId: 'usd-coin',
-  },
-  {
-    address: USDT_ADDRESS,
-    symbol: 'USDT',
-    name: 'Tether USD',
-    decimals: 6,
-    icon: '/tokens/usdt.svg',
-    chainId: BASE_CHAIN_ID,
-    coingeckoId: 'tether',
-  },
-  {
-    address: DAI_ADDRESS,
-    symbol: 'DAI',
-    name: 'Dai Stablecoin',
-    decimals: 18,
-    icon: '/tokens/dai.svg',
-    chainId: BASE_CHAIN_ID,
-    coingeckoId: 'dai',
   },
   {
     address: WETH_ADDRESS,
@@ -66,7 +48,7 @@ export const TOKENS: Token[] = [
     name: 'Wrapped Ether',
     decimals: 18,
     icon: '/tokens/weth.svg',
-    chainId: BASE_CHAIN_ID,
+    chainId: SEPOLIA_CHAIN_ID,
     coingeckoId: 'weth',
   },
 ];
@@ -78,7 +60,7 @@ export const DEFAULT_TOKEN = TOKENS[0]; // USDC
 // ============================================================
 
 export const P2P_CONFIG = {
-  primaryChain: 'base',
+  primaryChain: 'baseSepolia',
   supportedFiatRails: ['UPI', 'PIX', 'QRIS', 'MercadoPago', 'PagoMovil'] as const,
   defaultFiatRail: 'UPI' as const,
   escrowTimeout: 30 * 60 * 1000, // 30 minutes
@@ -106,12 +88,12 @@ export const MOCK_EXCHANGE_RATES: Record<string, number> = {
 // ============================================================
 
 export const APP_CONFIG = {
-  name: 'CryptoBill',
-  tagline: 'Pay Bills with Crypto. Seamlessly.',
-  description: 'Pay your utility bills using cryptocurrency with on-chain security and instant settlements.',
+  name: 'P2P Pay',
+  tagline: 'Pay Utility Bills with USDC. Seamlessly.',
+  description: 'Pay your utility bills using USDC on Base Sepolia with on-chain security and instant settlements.',
   version: '1.0.0',
   defaultCurrency: 'INR' as const,
-  defaultChainId: BASE_CHAIN_ID,
+  defaultChainId: SEPOLIA_CHAIN_ID,
   maxRecentTransactions: 50,
   maxSavedBillers: 20,
   billFetchTimeout: 10000,

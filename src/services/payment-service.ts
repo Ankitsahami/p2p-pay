@@ -285,7 +285,7 @@ export const PaymentService = {
 
       // Update transaction status in localStorage
       try {
-        const walletAddress = order.walletAddress || (order as any).recipientAddr || '';
+        const walletAddress = (order as any).walletAddress || (order as any).recipientAddr || '';
         if (walletAddress) {
           const key = `p2p-pay-txs-${walletAddress.toLowerCase()}`;
           const localData = typeof window !== 'undefined' ? localStorage.getItem(key) : null;
@@ -336,7 +336,7 @@ export const PaymentService = {
 
     // Update mock transaction status in localStorage
     try {
-      const walletAddress = order.walletAddress || (order as any).recipientAddr || '';
+      const walletAddress = (order as any).walletAddress || (order as any).recipientAddr || '';
       if (walletAddress) {
         const key = `p2p-pay-txs-${walletAddress.toLowerCase()}`;
         const localData = typeof window !== 'undefined' ? localStorage.getItem(key) : null;

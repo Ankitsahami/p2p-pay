@@ -76,14 +76,14 @@ export default function SendPage() {
 
     try {
       let walletClient = undefined;
-      const embeddedWallet = wallets.find(
+      const activeWallet = wallets.find((w) => w.walletClientType === 'smart_wallet') || wallets.find(
         (w) => w.walletClientType === 'privy' || w.connectorType === 'embedded'
       );
 
-      if (embeddedWallet) {
-        const provider = await embeddedWallet.getEthereumProvider();
+      if (activeWallet) {
+        const provider = await activeWallet.getEthereumProvider();
         walletClient = createWalletClient({
-          account: embeddedWallet.address as `0x${string}`,
+          account: activeWallet.address as `0x${string}`,
           chain: baseSepolia,
           transport: custom(provider),
         });

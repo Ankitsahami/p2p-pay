@@ -25,7 +25,10 @@ export const useAuth = () => {
         const email = privyUser.email?.address || privyUser.google?.email || '';
         const name = privyUser.google?.name || privyUser.email?.address?.split('@')[0] || 'User';
         const avatar = (privyUser.google as any)?.picture || '';
-        const walletAddress = wallets?.find(
+        const smartWallet = wallets?.find(
+          (w) => w.walletClientType === 'smart_wallet' || w.connectorType === 'smart_wallet'
+        );
+        const walletAddress = smartWallet?.address || wallets?.find(
           (w) => w.walletClientType === 'privy' || w.connectorType === 'embedded'
         )?.address || (privyUser as any).wallet?.address || '';
         
@@ -75,7 +78,10 @@ export const useAuth = () => {
     }
   };
 
-  const embeddedWalletAddress = wallets?.find(
+  const smartWallet = wallets?.find(
+    (w) => w.walletClientType === 'smart_wallet' || w.connectorType === 'smart_wallet'
+  );
+  const embeddedWalletAddress = smartWallet?.address || wallets?.find(
     (w) => w.walletClientType === 'privy' || w.connectorType === 'embedded'
   )?.address || (privy.user as any)?.wallet?.address || user?.walletAddress || '';
 

@@ -4,9 +4,14 @@ import * as React from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'react-hot-toast';
 import { PrivyAuthProvider } from './privy-provider';
-import { SdkProvider } from '@p2pdotme/sdk/react';
+import dynamic from 'next/dynamic';
 import { createPublicClient, http } from 'viem';
 import { baseSepolia } from 'viem/chains';
+
+const SdkProvider = dynamic<any>(
+  () => import('@p2pdotme/sdk/react').then((mod) => mod.SdkProvider),
+  { ssr: false }
+);
 
 const queryClient = new QueryClient({
   defaultOptions: {

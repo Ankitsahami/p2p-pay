@@ -67,6 +67,11 @@ export const PaymentService = {
     walletAddress: string,
     walletClient?: any
   ): Promise<PaymentOrder> {
+    const isRealWallet = walletAddress && !walletAddress.startsWith('0xMock') && walletAddress.toLowerCase() !== '0x0000000000000000000000000000000000000000';
+    if (isRealWallet && !walletClient) {
+      throw new Error('Privy wallet client is not fully initialized. Please wait a moment for the connection to synchronize and try again.');
+    }
+
     if (walletClient) {
       try {
         const orders = createOrders({

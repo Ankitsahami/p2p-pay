@@ -109,7 +109,7 @@ export function generateId(prefix: string = 'TXN'): string {
  * Get block explorer URL for a transaction hash
  */
 export function getExplorerUrl(txHash: string, type: 'tx' | 'address' = 'tx'): string {
-  return `https://sepolia.etherscan.io/${type}/${txHash}`;
+  return `https://sepolia.basescan.org/${type}/${txHash}`;
 }
 
 /**

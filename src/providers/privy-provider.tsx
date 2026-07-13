@@ -13,7 +13,7 @@ export const PrivyAuthProvider = ({ children }: { children: React.ReactNode }) =
 
   return (
     <PrivyProvider
-      appId={appId || ''}
+      appId={appId || 'cmri1q7js00t40dl2kpmt6ayv'}
       config={{
         loginMethods: ['google', 'email'],
         appearance: {

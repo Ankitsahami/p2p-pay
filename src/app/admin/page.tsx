@@ -130,7 +130,7 @@ export default function AdminPage() {
                 </div>
                 <div className="flex items-center gap-3">
                   <span className="font-bold text-slate-800">{formatCurrency(tx.fiatAmount, 'INR')}</span>
-                  <Badge variant={tx.status === 'completed' ? 'success' : 'pending'} size="sm">
+                  <Badge variant={tx.status === 'completed' ? 'success' : 'warning'} size="sm">
                     {tx.status}
                   </Badge>
                 </div>

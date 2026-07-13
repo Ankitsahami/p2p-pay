@@ -11,6 +11,7 @@ import { Select } from '@/components/ui/select';
 import { useWallet } from '@/hooks/use-wallet';
 import { useAuth, usePrivy } from '@/hooks/use-auth';
 import { useWallets } from '@privy-io/react-auth';
+import { useSmartWallets } from '@privy-io/react-auth/smart-wallets';
 import { WalletService } from '@/services/wallet-service';
 import { TOKENS } from '@/lib/constants';
 import { formatCrypto, formatCurrency } from '@/lib/utils';
@@ -22,6 +23,7 @@ export default function SendPage() {
   const { walletAddress } = useAuth();
   const { getBalance, deductBalance, activeCurrency, formatFiatValue } = useWallet();
   const { wallets } = useWallets();
+  const { smartWallet } = useSmartWallets();
 
   // Form State
   const [recipient, setRecipient] = React.useState('');
@@ -76,7 +78,7 @@ export default function SendPage() {
 
     try {
       let walletClient = undefined;
-      const activeWallet = wallets.find((w) => w.walletClientType === 'smart_wallet') || wallets.find(
+      const activeWallet = smartWallet || wallets.find(
         (w) => w.walletClientType === 'privy' || w.connectorType === 'embedded'
       );
 

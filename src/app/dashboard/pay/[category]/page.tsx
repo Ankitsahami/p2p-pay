@@ -13,6 +13,7 @@ import { useWallet } from '@/hooks/use-wallet';
 import { useAuth } from '@/hooks/use-auth';
 import { useUserStore } from '@/stores/user-store';
 import { useWallets } from '@privy-io/react-auth';
+import { useSmartWallets } from '@privy-io/react-auth/smart-wallets';
 import { createWalletClient, custom } from 'viem';
 import { baseSepolia } from 'viem/chains';
 import { BILL_CATEGORIES } from '@/lib/bill-categories';
@@ -29,6 +30,7 @@ export default function CategoryPayPage() {
   const { deductBalance } = useWallet();
   const { saveBiller, isBillerSaved, preferences } = useUserStore();
   const { wallets } = useWallets();
+  const { smartWallet } = useSmartWallets();
 
   const categoryId = params.category as string;
   const urlProviderId = searchParams.get('providerId');
@@ -111,7 +113,7 @@ export default function CategoryPayPage() {
 
     try {
       let walletClient = undefined;
-      const activeWallet = wallets.find((w) => w.walletClientType === 'smart_wallet') || wallets.find(
+      const activeWallet = smartWallet || wallets.find(
         (w) => w.walletClientType === 'privy' || w.connectorType === 'embedded'
       );
 

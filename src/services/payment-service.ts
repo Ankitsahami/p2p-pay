@@ -139,11 +139,16 @@ export const PaymentService = {
         // ═══════════════════════════════════════════════════════════════
         const { raw: onChainBalance, formatted: balanceStr } = await getOnChainUsdcBalance(activeSender);
         
-        if (onChainBalance < totalUsdcVal) {
-          const requiredStr = formatUnits(totalUsdcVal, 6);
+        // Calculate correct net order amount and required pull amount including on-chain Diamond fee (0.125 USDC)
+        const netUsdcVal = parseUnits(quote.cryptoAmount, 6);
+        const actualFixedFee = parseUnits('0.125', 6);
+        const requiredPullAmount = netUsdcVal + actualFixedFee;
+
+        if (onChainBalance < requiredPullAmount) {
+          const requiredStr = formatUnits(requiredPullAmount, 6);
           throw new Error(
-            `Insufficient USDC balance. You have ${balanceStr} USDC but need ${requiredStr} USDC (including fees). ` +
-            `Please add at least ${formatUnits(totalUsdcVal - onChainBalance, 6)} more USDC to your wallet.`
+            `Insufficient USDC balance. You have ${balanceStr} USDC but need ${requiredStr} USDC (including on-chain escrow fee). ` +
+            `Please add at least ${formatUnits(requiredPullAmount - onChainBalance, 6)} more USDC to your wallet.`
           );
         }
 
@@ -156,10 +161,13 @@ export const PaymentService = {
 
         // ═══════════════════════════════════════════════════════════════
         // STEP 1: Approve USDC spending (Popup 1: shows token + amount)
+        //         We approve the required pull amount + a small buffer of 0.05 USDC
+        //         to handle any minor rounding issues in on-chain fee calculation.
         // ═══════════════════════════════════════════════════════════════
+        const approveAmount = requiredPullAmount + parseUnits('0.05', 6);
         const approveResult = await orders.approveUsdc.execute({
           walletClient,
-          amount: totalUsdcVal,
+          amount: approveAmount,
           waitForReceipt: true,
         });
 
@@ -180,7 +188,7 @@ export const PaymentService = {
           currency: 'INR',
           user: activeSender,
           recipientAddr: activeSender,
-          amount: totalUsdcVal,
+          amount: netUsdcVal, // Pass net USDC value to placeOrder; Diamond adds 0.125 fee on top
           fiatAmount: parseUnits(quote.fiatAmount.toString(), 6),
           fiatAmountLimit: BigInt(0),
         });

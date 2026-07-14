@@ -11,7 +11,6 @@ import { Select } from '@/components/ui/select';
 import { useWallet } from '@/hooks/use-wallet';
 import { useAuth, usePrivy } from '@/hooks/use-auth';
 import { useWallets } from '@privy-io/react-auth';
-import { useSmartWallets } from '@privy-io/react-auth/smart-wallets';
 import { WalletService } from '@/services/wallet-service';
 import { TOKENS } from '@/lib/constants';
 import { formatCrypto, formatCurrency } from '@/lib/utils';
@@ -23,7 +22,6 @@ export default function SendPage() {
   const { walletAddress } = useAuth();
   const { getBalance, deductBalance, activeCurrency, formatFiatValue } = useWallet();
   const { wallets } = useWallets();
-  const { client: smartWalletClient } = useSmartWallets();
 
   // Form State
   const [recipient, setRecipient] = React.useState('');
@@ -78,20 +76,16 @@ export default function SendPage() {
 
     try {
       let walletClient = undefined;
-      if (smartWalletClient) {
-        walletClient = smartWalletClient;
-      } else {
-        const activeWallet = wallets.find(
-          (w) => w.walletClientType === 'privy' || w.connectorType === 'embedded'
-        );
-        if (activeWallet) {
-          const provider = await activeWallet.getEthereumProvider();
-          walletClient = createWalletClient({
-            account: activeWallet.address as `0x${string}`,
-            chain: baseSepolia,
-            transport: custom(provider),
-          });
-        }
+      const activeWallet = wallets.find(
+        (w) => w.walletClientType === 'privy' || w.connectorType === 'embedded'
+      );
+      if (activeWallet) {
+        const provider = await activeWallet.getEthereumProvider();
+        walletClient = createWalletClient({
+          account: activeWallet.address as `0x${string}`,
+          chain: baseSepolia,
+          transport: custom(provider),
+        });
       }
 
       await WalletService.sendTransaction(recipient, amount, selectedToken, walletAddress, walletClient);

@@ -3,7 +3,7 @@
 import * as React from 'react';
 import { useRouter, useParams, useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { Zap, Droplets, Flame, Smartphone, Tv, Wifi, Car, CreditCard, Shield, Building2, GraduationCap, Home, ArrowLeft, Search, Loader2 } from 'lucide-react';
+import { Zap, Droplets, Flame, Smartphone, Tv, Wifi, Car, CreditCard, Shield, Building2, GraduationCap, Home, ArrowLeft, Search, Loader2, AlertTriangle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -14,13 +14,20 @@ import { useAuth } from '@/hooks/use-auth';
 import { useUserStore } from '@/stores/user-store';
 import { useWallets } from '@privy-io/react-auth';
 import { useSmartWallets } from '@privy-io/react-auth/smart-wallets';
-import { createWalletClient, custom } from 'viem';
+import { createWalletClient, custom, createPublicClient, http, formatUnits, erc20Abi } from 'viem';
 import { baseSepolia } from 'viem/chains';
 import { BILL_CATEGORIES } from '@/lib/bill-categories';
 import { BillService } from '@/services/bill-service';
 import { PaymentService } from '@/services/payment-service';
 import { formatCurrency, formatCrypto, generateId, getExplorerUrl } from '@/lib/utils';
+import { USDC_ADDRESS } from '@/lib/constants';
 import { type BillDetails, type PaymentQuote, type PaymentOrder, type PaymentOrderStatus } from '@/types';
+
+const rpcUrl = process.env.NEXT_PUBLIC_BASE_RPC_URL || 'https://sepolia.base.org';
+const chainPublicClient = createPublicClient({
+  chain: baseSepolia,
+  transport: http(rpcUrl),
+});
 
 export default function CategoryPayPage() {
   const router = useRouter();
@@ -55,6 +62,10 @@ export default function CategoryPayPage() {
   const [isPaying, setIsPaying] = React.useState(false);
   const [payStatus, setPayStatus] = React.useState<PaymentOrderStatus>('pending');
   const [escrowTxHash, setEscrowTxHash] = React.useState<string>('');
+
+  // On-chain balance validation
+  const [onChainBalance, setOnChainBalance] = React.useState<string | null>(null);
+  const [isBalanceSufficient, setIsBalanceSufficient] = React.useState(true);
   const [orderReceipt, setOrderReceipt] = React.useState<PaymentOrder | null>(null);
 
   // Back icon configuration
@@ -105,6 +116,39 @@ export default function CategoryPayPage() {
       setIsGettingQuote(false);
     }
   };
+
+  // Fetch on-chain USDC balance when quote is loaded
+  React.useEffect(() => {
+    if (!quote || !activeUserAddress) return;
+    let cancelled = false;
+
+    const checkBalance = async () => {
+      try {
+        const rawBalance = await chainPublicClient.readContract({
+          address: USDC_ADDRESS as `0x${string}`,
+          abi: erc20Abi,
+          functionName: 'balanceOf',
+          args: [activeUserAddress as `0x${string}`],
+        });
+        if (cancelled) return;
+        const formatted = formatUnits(rawBalance, 6);
+        setOnChainBalance(formatted);
+
+        const totalRequired = parseFloat(quote.totalCrypto);
+        const available = parseFloat(formatted);
+        setIsBalanceSufficient(available >= totalRequired);
+      } catch (err) {
+        console.error('Error fetching on-chain balance:', err);
+        if (!cancelled) {
+          setOnChainBalance(null);
+          setIsBalanceSufficient(true); // Don't block if we can't check
+        }
+      }
+    };
+
+    checkBalance();
+    return () => { cancelled = true; };
+  }, [quote, activeUserAddress]);
 
   const handlePay = async () => {
     if (!billDetails || !quote || !activeUserAddress) return;
@@ -390,18 +434,38 @@ export default function CategoryPayPage() {
                       <span className="text-slate-800">Total USDC Dues</span>
                       <span className="font-extrabold text-blue-600">{formatCrypto(quote.totalCrypto)} USDC</span>
                     </div>
+                    {onChainBalance !== null && (
+                      <div className="flex justify-between items-center border-t border-slate-100 pt-2 mt-1">
+                        <span className="text-slate-500">Your Wallet Balance</span>
+                        <span className={`font-semibold ${isBalanceSufficient ? 'text-emerald-600' : 'text-red-500'}`}>
+                          {parseFloat(onChainBalance).toFixed(6)} USDC
+                        </span>
+                      </div>
+                    )}
+
                     <p className="text-[10px] text-slate-500 leading-relaxed mt-2 text-center select-none">
                       🔒 Escrow locks USDC on Base. Dues cleared via peer UPI transfer directly.
                     </p>
                   </div>
+
+                  {!isBalanceSufficient && (
+                    <div className="flex items-center gap-2 px-3 py-2 bg-red-50 border border-red-200 rounded-xl text-red-600">
+                      <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+                      <p className="text-[10px] leading-snug font-medium">
+                        Insufficient USDC balance. You have {onChainBalance ? parseFloat(onChainBalance).toFixed(6) : '0'} USDC but need {quote.totalCrypto} USDC.
+                        Please add more USDC to your wallet.
+                      </p>
+                    </div>
+                  )}
 
                   <Button
                     variant="primary"
                     className="w-full mt-2 font-bold"
                     onClick={handlePay}
                     loading={isPaying}
+                    disabled={!isBalanceSufficient}
                   >
-                    {isPaying ? `State: ${payStatus}` : 'Confirm & Settle Dues'}
+                    {isPaying ? `State: ${payStatus}` : !isBalanceSufficient ? 'Insufficient USDC Balance' : 'Confirm & Settle Dues'}
                   </Button>
                 </Card>
               )}

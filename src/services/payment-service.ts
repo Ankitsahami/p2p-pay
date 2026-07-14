@@ -96,13 +96,15 @@ export const PaymentService = {
         // 2. Place Order (SELL: user sells USDC, receives INR to merchant)
         const providerUpi = `${billDetails.provider.id}@upi`;
 
+        const activeSender = (walletClient?.account?.address || walletAddress) as `0x${string}`;
+
         const placeResult = await orders.placeOrder.execute({
           walletClient,
           waitForReceipt: true,
           orderType: 1, // 1 = SELL
           currency: 'INR',
-          user: walletAddress as `0x${string}`,
-          recipientAddr: walletAddress as `0x${string}`,
+          user: activeSender,
+          recipientAddr: activeSender,
           amount: totalUsdcVal,
           fiatAmount: parseUnits(quote.fiatAmount.toString(), 6),
           fiatAmountLimit: BigInt(0),

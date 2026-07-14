@@ -384,7 +384,7 @@ export const PaymentService = {
                   orderId: BigInt(order.orderId),
                   paymentAddress: providerUpi,
                   merchantPublicKey: orderRes.value.pubkey,
-                  updatedAmount: orderRes.value.amount, // net amount (actual amount to pull)
+                  updatedAmount: orderRes.value.usdcAmount, // net amount (actual amount to pull)
                   waitForReceipt: true,
                 });
 

@@ -175,8 +175,21 @@ export default function CategoryPayPage() {
 
   // 1. Render Final Receipt Screen if completed
   if (orderReceipt) {
+    const formattedCompletedAt = (() => {
+      const date = orderReceipt.completedAt ? new Date(orderReceipt.completedAt) : new Date();
+      const day = String(date.getDate()).padStart(2, '0');
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const year = date.getFullYear();
+      let hours = date.getHours();
+      const minutes = String(date.getMinutes()).padStart(2, '0');
+      const ampm = hours >= 12 ? 'PM' : 'AM';
+      hours = hours % 12;
+      hours = hours ? hours : 12;
+      return `${day}/${month}/${year}, ${String(hours).padStart(2, '0')}:${minutes} ${ampm}`;
+    })();
+
     return (
-      <div className="max-w-md mx-auto flex flex-col gap-6 select-none">
+      <div className="max-w-md mx-auto flex flex-col gap-6 select-none animate-fade-in">
         <Card className="p-6 md:p-8 flex flex-col gap-6 text-center border-slate-100 bg-white shadow-sm">
           <div className="w-14 h-14 rounded-full bg-emerald-50 border border-emerald-100 flex items-center justify-center text-emerald-600 mx-auto animate-scale-in">
             <Shield className="w-6 h-6" />
@@ -189,32 +202,47 @@ export default function CategoryPayPage() {
 
           <div className="divide-y divide-slate-100 border-t border-b border-slate-100 py-2 text-xs text-left flex flex-col gap-3">
             <div className="flex justify-between items-center pt-2">
-              <span className="text-slate-500 font-semibold uppercase text-[9px]">Receipt ID</span>
-              <span className="font-bold text-slate-800">{generateId('RCP')}</span>
+              <span className="text-slate-500 font-semibold uppercase text-[9px] tracking-wider">Order ID</span>
+              <span className="font-bold text-slate-800">{orderReceipt.orderId}</span>
             </div>
             <div className="flex justify-between items-center pt-2">
-              <span className="text-slate-500 font-semibold uppercase text-[9px]">Provider</span>
-              <span className="font-bold text-slate-800">{billDetails?.provider.name}</span>
+              <span className="text-slate-500 font-semibold uppercase text-[9px] tracking-wider">Type</span>
+              <span className="font-bold text-slate-800 uppercase">Sell</span>
             </div>
             <div className="flex justify-between items-center pt-2">
-              <span className="text-slate-500 font-semibold uppercase text-[9px]">Connection Number</span>
-              <span className="font-bold text-slate-800">{consumerNumber}</span>
-            </div>
-            <div className="flex justify-between items-center pt-2">
-              <span className="text-slate-500 font-semibold uppercase text-[9px]">Consumer Name</span>
-              <span className="font-bold text-slate-800">{billDetails?.consumerName}</span>
-            </div>
-            <div className="flex justify-between items-center pt-2">
-              <span className="text-slate-500 font-semibold uppercase text-[9px]">Fiat Amount Paid</span>
-              <span className="font-bold text-slate-800">{formatCurrency(billDetails?.amount || 0, preferences.currency)}</span>
-            </div>
-            <div className="flex justify-between items-center pt-2">
-              <span className="text-slate-500 font-semibold uppercase text-[9px]">Total Crypto Debited</span>
+              <span className="text-slate-500 font-semibold uppercase text-[9px] tracking-wider">Amount</span>
               <span className="font-bold text-slate-800">{formatCrypto(quote?.totalCrypto || 0)} USDC</span>
+            </div>
+            <div className="flex justify-between items-center pt-2">
+              <span className="text-slate-500 font-semibold uppercase text-[9px] tracking-wider">Fee</span>
+              <span className="font-bold text-slate-800">0.050000 USDC</span>
+            </div>
+            <div className="flex justify-between items-center pt-2">
+              <span className="text-slate-500 font-semibold uppercase text-[9px] tracking-wider">Utility Provider Received</span>
+              <span className="font-bold text-emerald-600">{formatCurrency(billDetails?.amount || 0, preferences.currency)}</span>
+            </div>
+            <div className="flex justify-between items-center pt-2">
+              <span className="text-slate-500 font-semibold uppercase text-[9px] tracking-wider">Paid By</span>
+              <span className="font-mono text-slate-800 font-bold">{walletAddress ? `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}` : 'Smart Account'}</span>
+            </div>
+            <div className="flex justify-between items-center pt-2">
+              <span className="text-slate-500 font-semibold uppercase text-[9px] tracking-wider">Paid To (Merchant)</span>
+              <span className="font-bold text-slate-800 flex flex-col items-end">
+                <span>Goofy Faucet Merchant</span>
+                <span className="font-mono text-[9px] text-slate-400 font-normal">0x3b1B...04d</span>
+              </span>
+            </div>
+            <div className="flex justify-between items-center pt-2">
+              <span className="text-slate-500 font-semibold uppercase text-[9px] tracking-wider">Completed In</span>
+              <span className="font-bold text-slate-800">12s</span>
+            </div>
+            <div className="flex justify-between items-center pt-2">
+              <span className="text-slate-500 font-semibold uppercase text-[9px] tracking-wider">Completed At</span>
+              <span className="font-bold text-slate-800">{formattedCompletedAt}</span>
             </div>
             {escrowTxHash && (
               <div className="flex flex-col gap-1 pt-2">
-                <span className="text-slate-500 font-semibold uppercase text-[9px]">Escrow Tx Hash</span>
+                <span className="text-slate-500 font-semibold uppercase text-[9px] tracking-wider">Escrow Tx Hash</span>
                 <a
                   href={getExplorerUrl(escrowTxHash)}
                   target="_blank"

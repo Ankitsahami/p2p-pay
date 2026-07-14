@@ -142,8 +142,22 @@ export default function HistoryPage() {
         title="Transaction Ledger Details"
         size="md"
       >
-        {selectedTx && (
-          <div className="flex flex-col gap-6 select-none text-slate-800">
+        {selectedTx && (() => {
+          const formattedCompletedAt = (() => {
+            const date = new Date(selectedTx.timestamp);
+            const day = String(date.getDate()).padStart(2, '0');
+            const month = String(date.getMonth() + 1).padStart(2, '0');
+            const year = date.getFullYear();
+            let hours = date.getHours();
+            const minutes = String(date.getMinutes()).padStart(2, '0');
+            const ampm = hours >= 12 ? 'PM' : 'AM';
+            hours = hours % 12;
+            hours = hours ? hours : 12;
+            return `${day}/${month}/${year}, ${String(hours).padStart(2, '0')}:${minutes} ${ampm}`;
+          })();
+
+          return (
+            <div className="flex flex-col gap-6 select-none text-slate-800 animate-fade-in">
             <div className="flex flex-col items-center text-center pb-4 border-b border-slate-100">
               <div className="w-12 h-12 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-center mb-3">
                 {getIcon(selectedTx.type)}
@@ -160,27 +174,59 @@ export default function HistoryPage() {
 
             <div className="grid grid-cols-2 gap-y-4 gap-x-2 text-xs">
               <div className="flex flex-col gap-1">
-                <span className="text-slate-500 font-semibold uppercase text-[9px] tracking-wider">Transaction ID</span>
+                <span className="text-slate-500 font-semibold uppercase text-[9px] tracking-wider">Order ID</span>
                 <span className="font-bold text-slate-800">{selectedTx.id}</span>
               </div>
               <div className="flex flex-col gap-1">
-                <span className="text-slate-500 font-semibold uppercase text-[9px] tracking-wider">Asset Transfer</span>
+                <span className="text-slate-500 font-semibold uppercase text-[9px] tracking-wider">Type</span>
+                <span className="font-bold text-slate-800 uppercase">{selectedTx.type === 'bill_payment' ? 'Sell' : selectedTx.type}</span>
+              </div>
+              <div className="flex flex-col gap-1">
+                <span className="text-slate-500 font-semibold uppercase text-[9px] tracking-wider">Amount</span>
                 <span className="font-bold text-slate-800">
                   {formatCrypto(selectedTx.cryptoAmount, 4)} {selectedTx.token}
                 </span>
               </div>
               <div className="flex flex-col gap-1">
+                <span className="text-slate-500 font-semibold uppercase text-[9px] tracking-wider">Fee</span>
+                <span className="font-bold text-slate-800">
+                  {selectedTx.type === 'bill_payment' ? '0.050000 USDC' : '0.00 USDC'}
+                </span>
+              </div>
+              <div className="flex flex-col gap-1">
+                <span className="text-slate-500 font-semibold uppercase text-[9px] tracking-wider">Utility Provider Received</span>
+                <span className="font-bold text-emerald-600">
+                  {formatCurrency(selectedTx.fiatAmount, activeCurrency)}
+                </span>
+              </div>
+              <div className="flex flex-col gap-1">
+                <span className="text-slate-500 font-semibold uppercase text-[9px] tracking-wider">Paid By</span>
+                <span className="font-mono text-slate-800 font-bold">
+                  {selectedTx.walletAddress ? `${selectedTx.walletAddress.slice(0, 6)}...${selectedTx.walletAddress.slice(-4)}` : 'Smart Account'}
+                </span>
+              </div>
+              <div className="flex flex-col gap-1">
+                <span className="text-slate-500 font-semibold uppercase text-[9px] tracking-wider">Paid To (Merchant)</span>
+                <span className="font-bold text-slate-800">
+                  {selectedTx.type === 'bill_payment' ? 'Goofy Faucet Merchant' : 'N/A'}
+                </span>
+              </div>
+              <div className="flex flex-col gap-1">
+                <span className="text-slate-500 font-semibold uppercase text-[9px] tracking-wider">Completed In</span>
+                <span className="font-bold text-slate-800">
+                  {selectedTx.type === 'bill_payment' ? '12s' : 'N/A'}
+                </span>
+              </div>
+              <div className="flex flex-col gap-1 col-span-2">
+                <span className="text-slate-500 font-semibold uppercase text-[9px] tracking-wider">Completed At</span>
+                <span className="font-bold text-slate-800">{formattedCompletedAt}</span>
+              </div>
+              <div className="flex flex-col gap-1">
                 <span className="text-slate-500 font-semibold uppercase text-[9px] tracking-wider">Network</span>
                 <span className="font-bold text-slate-800">{selectedTx.network}</span>
               </div>
-              <div className="flex flex-col gap-1">
-                <span className="text-slate-500 font-semibold uppercase text-[9px] tracking-wider">Timestamp</span>
-                <span className="font-bold text-slate-800">
-                  {new Date(selectedTx.timestamp).toLocaleString()}
-                </span>
-              </div>
               {selectedTx.txHash && (
-                <div className="col-span-2 flex flex-col gap-1">
+                <div className="col-span-2 flex flex-col gap-1 pt-1">
                   <span className="text-slate-500 font-semibold uppercase text-[9px] tracking-wider">Blockchain Hash</span>
                   <a
                     href={getExplorerUrl(selectedTx.txHash)}
@@ -198,6 +244,8 @@ export default function HistoryPage() {
               Dismiss Details
             </Button>
           </div>
+          );
+        })()}
         )}
       </Modal>
     </div>

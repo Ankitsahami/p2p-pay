@@ -203,6 +203,9 @@ export interface Transaction {
   toAddress?: string;
   receipt?: TransactionReceipt;
   timestamp: string;
+  merchantAddress?: string;
+  fee?: string;
+  completedIn?: string;
 }
 
 export type TransactionType =

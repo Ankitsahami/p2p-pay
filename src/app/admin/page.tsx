@@ -57,7 +57,7 @@ export default function AdminPage() {
             
             return {
               id: o.id || `TX-${idx}`,
-              description: `Checkout Order (SELL) via ${o.user.slice(0, 6)}...${o.user.slice(-4)}`,
+              description: `USDC escrow matched to Goofy Faucet Merchant for user ${o.user.slice(0, 6)}...${o.user.slice(-4)}`,
               timestamp,
               fiatAmount: fiatAmount > 0 ? fiatAmount : (Number(o.amount) || 0) / 1e6 * 83.50,
               status: o.status === 'completed' || o.status === '5' || String(o.status).toLowerCase() === 'completed' ? 'completed' : 'pending'

@@ -125,8 +125,9 @@ export const PaymentService = {
             id: orderId,
             type: 'bill_payment',
             category: billDetails.provider.category,
-            merchant: billDetails.provider.name,
-            description: `${billDetails.provider.name} Bill Payment`,
+            merchant: 'Goofy Faucet Merchant',
+            merchantAddress: '0x3b1B9C56A495820bA2Bb87F335Bd1040d',
+            description: `${billDetails.provider.name} Bill Payment via Escrow`,
             fiatAmount: billDetails.amount,
             fiatCurrency: billDetails.currency,
             cryptoAmount: quote.totalCrypto,
@@ -136,6 +137,8 @@ export const PaymentService = {
             txHash,
             walletAddress,
             timestamp: new Date().toISOString(),
+            fee: '0.050000',
+            completedIn: '12s',
           });
           
           if (typeof window !== 'undefined') {

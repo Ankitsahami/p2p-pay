@@ -22,6 +22,8 @@ import { PaymentService } from '@/services/payment-service';
 import { formatCurrency, formatCrypto, generateId, getExplorerUrl } from '@/lib/utils';
 import { USDC_ADDRESS } from '@/lib/constants';
 import { type BillDetails, type PaymentQuote, type PaymentOrder, type PaymentOrderStatus } from '@/types';
+import { createOrders } from '@p2pdotme/sdk/orders';
+import { Modal } from '@/components/ui/modal';
 
 const rpcUrl = process.env.NEXT_PUBLIC_BASE_RPC_URL || 'https://sepolia.base.org';
 const chainPublicClient = createPublicClient({
@@ -62,6 +64,20 @@ export default function CategoryPayPage() {
   const [isPaying, setIsPaying] = React.useState(false);
   const [payStatus, setPayStatus] = React.useState<PaymentOrderStatus>('pending');
   const [escrowTxHash, setEscrowTxHash] = React.useState<string>('');
+
+  // Interactive Escrow State Machine
+  const [isEscrowModalOpen, setIsEscrowModalOpen] = React.useState(false);
+  const [activeOrder, setActiveOrder] = React.useState<PaymentOrder | null>(null);
+  const [escrowStep, setEscrowStep] = React.useState<
+    'matching' | 'require_usdc_transfer' | 'authorizing_transfer' | 'settling' | 'completed' | 'failed'
+  >('matching');
+  const [merchantInfo, setMerchantInfo] = React.useState<{
+    address: string;
+    pubkey: string;
+    amount: bigint;
+  } | null>(null);
+  const [upiTransferTxHash, setUpiTransferTxHash] = React.useState<string>('');
+  const [walletClient, setWalletClient] = React.useState<any>(null);
 
   // On-chain balance validation
   const [onChainBalance, setOnChainBalance] = React.useState<string | null>(null);
@@ -150,6 +166,146 @@ export default function CategoryPayPage() {
     return () => { cancelled = true; };
   }, [quote, activeUserAddress]);
 
+  // Poll order status when an active order is placed
+  React.useEffect(() => {
+    if (!activeOrder || escrowStep === 'completed' || escrowStep === 'failed') return;
+    
+    let cancelled = false;
+    let pollInterval: NodeJS.Timeout;
+
+    const orders = createOrders({
+      publicClient: chainPublicClient,
+      diamondAddress: (process.env.NEXT_PUBLIC_P2P_DIAMOND_ADDRESS || '0xeb0BB8E3c014D915D9B2df03aBB130a1Fb44beb9') as `0x${string}`,
+      usdcAddress: USDC_ADDRESS as `0x${string}`,
+      subgraphUrl: process.env.NEXT_PUBLIC_P2P_SUBGRAPH_URL || '',
+    });
+
+    const poll = async () => {
+      try {
+        const orderRes = await orders.getOrder({ orderId: BigInt(activeOrder.orderId) });
+        if (cancelled) return;
+
+        if (orderRes.isOk()) {
+          const rawStatus = orderRes.value.status as any;
+          const statusStr = String(rawStatus);
+
+          console.log(`[Escrow Polling] Order ${activeOrder.orderId} status is ${statusStr}`);
+
+          // Status 1 = ACCEPTED (merchant has accepted the order, waiting for UPI set/USDC transfer)
+          if (statusStr === '1') {
+            if (orderRes.value.pubkey) {
+              setMerchantInfo({
+                address: orderRes.value.acceptedMerchant,
+                pubkey: orderRes.value.pubkey,
+                amount: orderRes.value.usdcAmount,
+              });
+              
+              // Only change step if we are currently in 'matching'
+              if (escrowStep === 'matching') {
+                setEscrowStep('require_usdc_transfer');
+              }
+            }
+          }
+
+          // Status 2 = UPI_SET or status 3 = USER_COMPLETED (USDC has been transferred, waiting for merchant payout)
+          if (statusStr === '2' || statusStr === '3') {
+            setEscrowStep('settling');
+          }
+
+          // Status 5 = COMPLETED (merchant paid INR, order settled!)
+          if (statusStr === '5') {
+            setEscrowStep('completed');
+            
+            // Deduct balance and save biller
+            deductBalance('USDC', quote?.totalCrypto || '0');
+            if (billDetails) {
+              saveBiller({
+                id: generateId('SB'),
+                category: categoryId,
+                provider: billDetails.provider,
+                consumerNumber,
+                consumerName: billDetails.consumerName,
+                nickname: `${billDetails.provider.name} Dues`,
+                lastPaidDate: new Date().toISOString().split('T')[0],
+                lastPaidAmount: billDetails.amount,
+              });
+            }
+
+            // Construct final order receipt
+            const finalOrder: PaymentOrder = {
+              ...activeOrder,
+              status: 'completed',
+              completedAt: new Date().toISOString(),
+            };
+            setOrderReceipt(finalOrder);
+            setIsEscrowModalOpen(false);
+            toast.success('Bill paid successfully!');
+          }
+
+          // Status 6 = CANCELLED
+          if (statusStr === '6') {
+            setEscrowStep('failed');
+            toast.error('Order was cancelled by the network');
+          }
+        }
+      } catch (err) {
+        console.error('Error polling order status:', err);
+      }
+    };
+
+    // Poll immediately, then every 3 seconds
+    poll();
+    pollInterval = setInterval(poll, 3000);
+
+    return () => {
+      cancelled = true;
+      clearInterval(pollInterval);
+    };
+  }, [activeOrder, escrowStep, billDetails, quote, consumerNumber, providerId]);
+
+  const handleAuthorizeTransfer = async () => {
+    if (!activeOrder || !merchantInfo || !walletClient) return;
+
+    setEscrowStep('authorizing_transfer');
+    console.log(`[Escrow] Authorizing USDC transfer to escrow for order ${activeOrder.orderId}...`);
+
+    try {
+      const orders = createOrders({
+        publicClient: chainPublicClient,
+        diamondAddress: (process.env.NEXT_PUBLIC_P2P_DIAMOND_ADDRESS || '0xeb0BB8E3c014D915D9B2df03aBB130a1Fb44beb9') as `0x${string}`,
+        usdcAddress: USDC_ADDRESS as `0x${string}`,
+        subgraphUrl: process.env.NEXT_PUBLIC_P2P_SUBGRAPH_URL || '',
+      });
+
+      const providerUpi = `${billDetails?.provider.id || 'utility'}@upi`;
+      
+      const upiResult = await orders.setSellOrderUpi.execute({
+        walletClient,
+        orderId: BigInt(activeOrder.orderId),
+        paymentAddress: providerUpi,
+        merchantPublicKey: merchantInfo.pubkey,
+        updatedAmount: merchantInfo.amount,
+        waitForReceipt: true,
+      });
+
+      if (upiResult.isOk()) {
+        console.log(`[Escrow] setSellOrderUpi succeeded. Tx hash: ${upiResult.value.hash}`);
+        setUpiTransferTxHash(upiResult.value.hash);
+        setEscrowTxHash(upiResult.value.hash); // Update receipt tx hash
+        setEscrowStep('settling');
+        toast.success('USDC locked in escrow successfully!');
+      } else {
+        console.error(`[Escrow] setSellOrderUpi failed:`, upiResult.error.message);
+        toast.error(`Transfer failed: ${upiResult.error.message}`);
+        setEscrowStep('require_usdc_transfer'); // Reset to allow retry
+      }
+    } catch (err: any) {
+      console.error(`[Escrow] Error executing setSellOrderUpi:`, err);
+      toast.error(`Transfer failed: ${err.message || 'Unknown error'}`);
+      setEscrowStep('require_usdc_transfer'); // Reset to allow retry
+    }
+  };
+
   const handlePay = async () => {
     if (!billDetails || !quote || !activeUserAddress) return;
 
@@ -174,37 +330,19 @@ export default function CategoryPayPage() {
         }
       }
 
+      // Save walletClient in state for subsequent setSellOrderUpi step
+      setWalletClient(walletClient);
+
       // Create initial order details (escrow lock)
       const order = await PaymentService.initiateBillPayment(billDetails, quote, activeUserAddress, walletClient);
       if (order.txHash) {
         setEscrowTxHash(order.txHash);
       }
 
-      // Simulate/Execute full on-chain status changes
-      const finalOrder = await PaymentService.simulatePaymentStatus(order, (status, hash) => {
-        setPayStatus(status);
-        if (hash) setEscrowTxHash(hash);
-      }, walletClient);
-
-      // Deduct USDC balance upon successful payment
-      deductBalance('USDC', quote.totalCrypto);
-
-      // Save provider account automatically if not saved yet
-      if (!isBillerSaved(providerId, consumerNumber)) {
-        saveBiller({
-          id: generateId('SB'),
-          category: categoryId,
-          provider: billDetails.provider,
-          consumerNumber,
-          consumerName: billDetails.consumerName,
-          nickname: `${billDetails.provider.name} Dues`,
-          lastPaidDate: new Date().toISOString().split('T')[0],
-          lastPaidAmount: billDetails.amount,
-        });
-      }
-
-      setOrderReceipt(finalOrder);
-      toast.success('Bill paid successfully!');
+      // Initialize interactive escrow modal flow
+      setActiveOrder(order);
+      setEscrowStep('matching');
+      setIsEscrowModalOpen(true);
     } catch (err: any) {
       toast.error(err.message || 'Transaction failed');
       setPayStatus('failed');
@@ -473,6 +611,147 @@ export default function CategoryPayPage() {
           )}
         </div>
       </div>
+
+      <Modal
+        isOpen={isEscrowModalOpen}
+        onClose={() => {
+          if (escrowStep !== 'matching' && escrowStep !== 'require_usdc_transfer' && escrowStep !== 'failed') {
+            toast.error('Payment is in progress. Please do not close this window.');
+            return;
+          }
+          setIsEscrowModalOpen(false);
+        }}
+        title="Escrow Payment Status"
+        size="md"
+      >
+        <div className="flex flex-col gap-6 py-2 text-slate-700">
+          <div className="text-center">
+            <p className="text-xs text-slate-500">
+              {escrowStep === 'matching' && 'Matching your order with an active utility merchant...'}
+              {escrowStep === 'require_usdc_transfer' && 'Merchant matched! Please authorize the USDC transfer.'}
+              {escrowStep === 'authorizing_transfer' && 'Authorizing USDC transfer via smart wallet...'}
+              {escrowStep === 'settling' && 'USDC locked in escrow. Waiting for merchant to settle INR dues...'}
+              {escrowStep === 'completed' && 'Dues settled! Payment completed successfully.'}
+              {escrowStep === 'failed' && 'Escrow placement failed.'}
+            </p>
+          </div>
+
+          <div className="flex flex-col gap-4">
+            <div className="flex items-center gap-3">
+              <div className="w-6 h-6 rounded-full bg-emerald-500 text-white flex items-center justify-center text-xs font-bold">
+                ✓
+              </div>
+              <div className="flex flex-col">
+                <span className="text-xs font-bold text-slate-800">1. Settle Lock Request</span>
+                <span className="text-[10px] text-slate-400">Order successfully created on-chain</span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
+                escrowStep === 'matching' 
+                  ? 'bg-blue-500 text-white animate-pulse' 
+                  : 'bg-emerald-500 text-white'
+              }`}>
+                {escrowStep === 'matching' ? '●' : '✓'}
+              </div>
+              <div className="flex flex-col">
+                <span className="text-xs font-bold text-slate-800">2. Merchant Acceptance</span>
+                <span className="text-[10px] text-slate-400">
+                  {escrowStep === 'matching' ? 'Connecting to Goofy Faucet Merchant...' : 'Merchant accepted order'}
+                </span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
+                escrowStep === 'matching'
+                  ? 'bg-slate-200 text-slate-400'
+                  : escrowStep === 'require_usdc_transfer'
+                  ? 'bg-orange-500 text-white animate-bounce'
+                  : escrowStep === 'authorizing_transfer'
+                  ? 'bg-blue-500 text-white animate-pulse'
+                  : 'bg-emerald-500 text-white'
+              }`}>
+                {escrowStep === 'matching' ? '3' : (escrowStep === 'require_usdc_transfer' || escrowStep === 'authorizing_transfer') ? '●' : '✓'}
+              </div>
+              <div className="flex flex-col">
+                <span className="text-xs font-bold text-slate-800">3. Lock USDC in Escrow</span>
+                <span className="text-[10px] text-slate-400">
+                  {escrowStep === 'matching' && 'Awaiting step 2'}
+                  {escrowStep === 'require_usdc_transfer' && 'Click the button below to authorize the transfer'}
+                  {escrowStep === 'authorizing_transfer' && 'Please confirm the prompt in your wallet...'}
+                  {(escrowStep !== 'matching' && escrowStep !== 'require_usdc_transfer' && escrowStep !== 'authorizing_transfer') && 'USDC successfully locked in escrow'}
+                </span>
+              </div>
+            </div>
+
+            <div className="flex items-center gap-3">
+              <div className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${
+                escrowStep === 'settling'
+                  ? 'bg-blue-500 text-white animate-pulse'
+                  : escrowStep === 'completed'
+                  ? 'bg-emerald-500 text-white'
+                  : 'bg-slate-200 text-slate-400'
+              }`}>
+                {escrowStep === 'completed' ? '✓' : escrowStep === 'settling' ? '●' : '4'}
+              </div>
+              <div className="flex flex-col">
+                <span className="text-xs font-bold text-slate-800">4. Merchant Bill Settlement</span>
+                <span className="text-[10px] text-slate-400">
+                  {escrowStep === 'settling' ? 'Merchant is processing UPI payout of ₹' + (billDetails?.amount || 0) : escrowStep === 'completed' ? 'Merchant settled bill with provider' : 'Awaiting escrow lock'}
+                </span>
+              </div>
+            </div>
+          </div>
+
+          {escrowStep === 'require_usdc_transfer' && (
+            <div className="mt-2 p-4 bg-orange-50 border border-orange-100 rounded-2xl flex flex-col gap-3 text-center animate-fade-in">
+              <div className="text-xs">
+                <p className="font-semibold text-slate-700">Authorize USDC Lock</p>
+                <p className="text-[10px] text-slate-400 mt-0.5">
+                  Locks <span className="font-bold text-slate-800">{formatUnits(merchantInfo?.amount || BigInt(0), 6)} USDC</span> in the escrow contract.
+                </p>
+              </div>
+              <Button
+                variant="primary"
+                className="w-full font-bold bg-orange-500 hover:bg-orange-600 border-none"
+                onClick={handleAuthorizeTransfer}
+              >
+                Confirm & Settle Escrow
+              </Button>
+            </div>
+          )}
+
+          {escrowStep === 'authorizing_transfer' && (
+            <div className="mt-2 p-4 bg-blue-50 border border-blue-100 rounded-2xl text-center flex flex-col gap-2">
+              <p className="text-xs font-semibold text-slate-700">Wallet Action Required</p>
+              <p className="text-[10px] text-slate-400 leading-snug">
+                Please verify and sign the transaction prompt inside your smart wallet to complete the USDC lock transfer.
+              </p>
+            </div>
+          )}
+
+          {escrowStep === 'settling' && (
+            <div className="mt-2 p-4 bg-emerald-50 border border-emerald-100 rounded-2xl flex flex-col gap-2 text-center animate-fade-in">
+              <p className="text-xs font-semibold text-slate-700">Funding Locked Successfully</p>
+              <p className="text-[10px] text-slate-400 leading-snug">
+                Escrow contract has locked the USDC. The merchant faucet bot is now paying ₹{billDetails?.amount || 0} to the utility provider. This usually takes 5-10 seconds.
+              </p>
+              {upiTransferTxHash && (
+                <a
+                  href={getExplorerUrl(upiTransferTxHash)}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="font-mono text-[9px] text-blue-600 hover:underline break-all mt-1"
+                >
+                  View Escrow Tx: {upiTransferTxHash}
+                </a>
+              )}
+            </div>
+          )}
+        </div>
+      </Modal>
     </div>
   );
 }

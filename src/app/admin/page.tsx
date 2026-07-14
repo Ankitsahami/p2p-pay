@@ -30,37 +30,42 @@ export default function AdminPage() {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             query: `{
-              orders(first: 200, orderBy: timestamp, orderDirection: desc) {
-                id
-                amount
-                fiatAmount
+              orders_collection(
+                limit: 200,
+                orderBy: "placedAt",
+                orderDirection: "desc"
+              ) {
+                orderId
                 status
-                user
-                timestamp
+                userAddress
+                usdcAmount
+                fiatAmount
+                placedAt
               }
             }`
           })
         });
 
         const resJson = await response.json();
-        const orders = resJson?.data?.orders || [];
+        const orders = resJson?.data?.orders_collection || [];
         
         if (orders.length > 0) {
           const totalTransactions = orders.length;
-          // Subgraph stores amount/fiatAmount in raw 6 decimals
+          // Subgraph stores fiatAmount in raw 6 decimals
           const totalVolume = orders.reduce((sum: number, o: any) => sum + (Number(o.fiatAmount) || 0) / 1e6, 0);
-          const uniqueUsers = new Set(orders.map((o: any) => o.user.toLowerCase())).size;
+          const uniqueUsers = new Set(orders.map((o: any) => (o.userAddress || '').toLowerCase())).size;
 
           const recentTx = orders.slice(0, 6).map((o: any, idx: number) => {
-            const timestamp = o.timestamp ? new Date(Number(o.timestamp) * 1000).toISOString() : new Date().toISOString();
+            const timestamp = o.placedAt ? new Date(Number(o.placedAt) * 1000).toISOString() : new Date().toISOString();
             const fiatAmount = (Number(o.fiatAmount) || 0) / 1e6;
+            const userAddr = o.userAddress || '0x000000';
             
             return {
-              id: o.id || `TX-${idx}`,
-              description: `USDC escrow matched to Goofy Faucet Merchant for user ${o.user.slice(0, 6)}...${o.user.slice(-4)}`,
+              id: o.orderId || `TX-${idx}`,
+              description: `USDC escrow matched to Goofy Faucet Merchant for user ${userAddr.slice(0, 6)}...${userAddr.slice(-4)}`,
               timestamp,
-              fiatAmount: fiatAmount > 0 ? fiatAmount : (Number(o.amount) || 0) / 1e6 * 83.50,
-              status: o.status === 'completed' || o.status === '5' || String(o.status).toLowerCase() === 'completed' ? 'completed' : 'pending'
+              fiatAmount: fiatAmount > 0 ? fiatAmount : (Number(o.usdcAmount) || 0) / 1e6 * 83.50,
+              status: o.status === 3 ? 'completed' : 'pending'
             };
           });
 

@@ -19,8 +19,6 @@ import {
 } from 'lucide-react';
 import { createPublicClient, http, createWalletClient, custom } from 'viem';
 import { baseSepolia } from 'viem/chains';
-import { useAuth } from '@/hooks/use-auth';
-import { usePrivy } from '@privy-io/react-auth';
 import { useWallets } from '@privy-io/react-auth';
 
 // Diamond contract ABI for acceptOrder
@@ -38,13 +36,13 @@ const ACCEPT_ORDER_ABI = [
 ] as const;
 
 // Order status mapping (from contract uint8)
-const ORDER_STATUS: Record<string, string> = {
-  '0': 'PLACED',
-  '1': 'ACCEPTED',
-  '2': 'PAID',
-  '3': 'COMPLETED',
-  '4': 'CANCELLED',
-  '5': 'DISPUTED',
+const ORDER_STATUS: Record<number, string> = {
+  0: 'PLACED',
+  1: 'ACCEPTED',
+  2: 'PAID',
+  3: 'COMPLETED',
+  4: 'CANCELLED',
+  5: 'DISPUTED',
 };
 
 // Merchant's public key (used when accepting order)
@@ -58,12 +56,17 @@ const SUBGRAPH_URL =
 const rpcUrl = process.env.NEXT_PUBLIC_BASE_RPC_URL || 'https://sepolia.base.org';
 
 interface SubgraphOrder {
-  id: string;
-  amount: string;
+  orderId: string;
+  type: number;
+  status: number;
+  userAddress: string;
+  usdcAmount: string;
   fiatAmount: string;
-  status: string;
-  user: string;
-  timestamp: string;
+  placedAt: string;
+  acceptedAt: string;
+  completedAt: string;
+  cancelledAt: string;
+  transactionHash: string;
 }
 
 interface OrderWithDetails extends SubgraphOrder {
@@ -77,7 +80,6 @@ interface OrderWithDetails extends SubgraphOrder {
 }
 
 export default function AdminOrdersPage() {
-  const { walletAddress } = useAuth();
   const { wallets } = useWallets();
   const [orders, setOrders] = React.useState<OrderWithDetails[]>([]);
   const [isLoading, setIsLoading] = React.useState(true);
@@ -94,39 +96,53 @@ export default function AdminOrdersPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           query: `{
-            orders(first: 100, orderBy: timestamp, orderDirection: desc) {
-              id
-              amount
-              fiatAmount
+            orders_collection(
+              limit: 100,
+              orderBy: "placedAt",
+              orderDirection: "desc"
+            ) {
+              orderId
+              type
               status
-              user
-              timestamp
+              userAddress
+              usdcAmount
+              fiatAmount
+              placedAt
+              acceptedAt
+              completedAt
+              cancelledAt
+              transactionHash
             }
           }`,
         }),
       });
       const resJson = await response.json();
-      const rawOrders: SubgraphOrder[] = resJson?.data?.orders || [];
+      const rawOrders: SubgraphOrder[] = resJson?.data?.orders_collection || [];
 
-      const mapped: OrderWithDetails[] = rawOrders.map((o) => {
-        const statusNum = String(o.status);
-        const statusLabel = ORDER_STATUS[statusNum] || `STATUS_${statusNum}`;
-        const fiatAmountHuman = (Number(o.fiatAmount) || 0) / 1e6;
-        const usdcAmountHuman = (Number(o.amount) || 0) / 1e6;
-        // Actionable = status 0 (PLACED) - these need merchant acceptance
-        const isActionable = statusNum === '0';
+      setOrders((prev) => {
+        const mapped: OrderWithDetails[] = rawOrders.map((o) => {
+          const statusLabel = ORDER_STATUS[o.status] ?? `STATUS_${o.status}`;
+          const fiatAmountHuman = (Number(o.fiatAmount) || 0) / 1e6;
+          const usdcAmountHuman = (Number(o.usdcAmount) || 0) / 1e6;
+          // Actionable = status 0 (PLACED) — these need merchant acceptance
+          const isActionable = o.status === 0;
 
-        return {
-          ...o,
-          fiatAmountHuman,
-          usdcAmountHuman,
-          statusLabel,
-          isActionable,
-          acceptState: 'idle',
-        };
+          // Preserve existing acceptState if we already accepted it
+          const existing = prev.find((p) => p.orderId === o.orderId);
+
+          return {
+            ...o,
+            fiatAmountHuman,
+            usdcAmountHuman,
+            statusLabel,
+            isActionable,
+            acceptState: existing?.acceptState ?? 'idle',
+            acceptTxHash: existing?.acceptTxHash,
+            acceptError: existing?.acceptError,
+          };
+        });
+        return mapped;
       });
-
-      setOrders(mapped);
       setLastFetched(new Date());
     } catch (err) {
       console.error('Failed to fetch orders from subgraph:', err);
@@ -147,11 +163,11 @@ export default function AdminOrdersPage() {
     async (order: OrderWithDetails) => {
       // Update state to loading
       setOrders((prev) =>
-        prev.map((o) => (o.id === order.id ? { ...o, acceptState: 'loading', acceptError: undefined } : o))
+        prev.map((o) => (o.orderId === order.orderId ? { ...o, acceptState: 'loading', acceptError: undefined } : o))
       );
-      if (selectedOrder?.id === order.id) {
-        setSelectedOrder((prev) => prev ? { ...prev, acceptState: 'loading', acceptError: undefined } : prev);
-      }
+      setSelectedOrder((prev) =>
+        prev?.orderId === order.orderId ? { ...prev, acceptState: 'loading', acceptError: undefined } : prev
+      );
 
       try {
         // Get the embedded wallet from Privy
@@ -174,7 +190,7 @@ export default function AdminOrdersPage() {
           transport: http(rpcUrl),
         });
 
-        const orderId = BigInt(order.id);
+        const orderId = BigInt(order.orderId);
 
         console.log(`[Admin] Accepting order ${orderId} with pubkey "${MERCHANT_PUBKEY}"`);
 
@@ -194,18 +210,16 @@ export default function AdminOrdersPage() {
         if (receipt.status === 'success') {
           setOrders((prev) =>
             prev.map((o) =>
-              o.id === order.id
-                ? { ...o, acceptState: 'success', acceptTxHash: txHash, status: '1', statusLabel: 'ACCEPTED', isActionable: false }
+              o.orderId === order.orderId
+                ? { ...o, acceptState: 'success', acceptTxHash: txHash, status: 1, statusLabel: 'ACCEPTED', isActionable: false }
                 : o
             )
           );
-          if (selectedOrder?.id === order.id) {
-            setSelectedOrder((prev) =>
-              prev
-                ? { ...prev, acceptState: 'success', acceptTxHash: txHash, status: '1', statusLabel: 'ACCEPTED', isActionable: false }
-                : prev
-            );
-          }
+          setSelectedOrder((prev) =>
+            prev?.orderId === order.orderId
+              ? { ...prev, acceptState: 'success', acceptTxHash: txHash, status: 1, statusLabel: 'ACCEPTED', isActionable: false }
+              : prev
+          );
         } else {
           throw new Error('Transaction reverted on-chain');
         }
@@ -214,38 +228,41 @@ export default function AdminOrdersPage() {
         const errMsg = err?.message || 'Transaction failed';
         setOrders((prev) =>
           prev.map((o) =>
-            o.id === order.id ? { ...o, acceptState: 'error', acceptError: errMsg } : o
+            o.orderId === order.orderId ? { ...o, acceptState: 'error', acceptError: errMsg } : o
           )
         );
-        if (selectedOrder?.id === order.id) {
-          setSelectedOrder((prev) =>
-            prev ? { ...prev, acceptState: 'error', acceptError: errMsg } : prev
-          );
-        }
+        setSelectedOrder((prev) =>
+          prev?.orderId === order.orderId ? { ...prev, acceptState: 'error', acceptError: errMsg } : prev
+        );
       }
     },
-    [wallets, selectedOrder]
+    [wallets]
   );
 
-  const pendingOrders = orders.filter((o) => o.status === '0');
-  const otherOrders = orders.filter((o) => o.status !== '0');
+  const pendingOrders = orders.filter((o) => o.status === 0);
 
-  const getStatusVariant = (status: string) => {
-    if (status === '0') return 'warning';
-    if (status === '1') return 'neutral';
-    if (status === '2') return 'neutral';
-    if (status === '3') return 'success';
-    if (status === '4' || status === '5') return 'error';
+  const getStatusVariant = (status: number) => {
+    if (status === 0) return 'warning';
+    if (status === 1) return 'neutral';
+    if (status === 2) return 'neutral';
+    if (status === 3) return 'success';
+    if (status === 4 || status === 5) return 'error';
     return 'neutral';
   };
 
-  const getStatusIcon = (status: string, acceptState?: string) => {
+  const getStatusIcon = (status: number, acceptState?: string) => {
     if (acceptState === 'loading') return <Loader2 className="w-4 h-4 animate-spin text-blue-500" />;
-    if (status === '0') return <Clock className="w-4 h-4 text-amber-500" />;
-    if (status === '1') return <ShieldCheck className="w-4 h-4 text-blue-500" />;
-    if (status === '3') return <CheckCircle2 className="w-4 h-4 text-emerald-500" />;
-    if (status === '4' || status === '5') return <XCircle className="w-4 h-4 text-red-500" />;
+    if (status === 0) return <Clock className="w-4 h-4 text-amber-500" />;
+    if (status === 1) return <ShieldCheck className="w-4 h-4 text-blue-500" />;
+    if (status === 3) return <CheckCircle2 className="w-4 h-4 text-emerald-500" />;
+    if (status === 4 || status === 5) return <XCircle className="w-4 h-4 text-red-500" />;
     return <Receipt className="w-4 h-4 text-slate-400" />;
+  };
+
+  const formatTs = (ts: string) => {
+    const n = Number(ts);
+    if (!n) return '—';
+    return new Date(n * 1000).toLocaleString();
   };
 
   return (
@@ -287,7 +304,7 @@ export default function AdminOrdersPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
             {pendingOrders.map((order) => (
               <Card
-                key={order.id}
+                key={order.orderId}
                 className="p-5 bg-white border-2 border-amber-100 shadow-sm hover:shadow-md hover:border-amber-200 transition-all cursor-pointer group"
                 onClick={() => setSelectedOrder(order)}
               >
@@ -297,8 +314,8 @@ export default function AdminOrdersPage() {
                       {getStatusIcon(order.status, order.acceptState)}
                     </div>
                     <div>
-                      <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Order #{order.id}</span>
-                      <p className="text-xs text-slate-400">{getRelativeTime(new Date(Number(order.timestamp) * 1000).toISOString())}</p>
+                      <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Order #{order.orderId}</span>
+                      <p className="text-xs text-slate-400">{getRelativeTime(new Date(Number(order.placedAt) * 1000).toISOString())}</p>
                     </div>
                   </div>
                   <Badge variant={getStatusVariant(order.status)} size="sm">
@@ -314,7 +331,7 @@ export default function AdminOrdersPage() {
                     {order.usdcAmountHuman.toFixed(4)} USDC • Base Sepolia
                   </span>
                   <span className="text-[10px] font-mono text-slate-400 truncate">
-                    from {truncateAddress(order.user, 6, 4)}
+                    from {truncateAddress(order.userAddress, 6, 4)}
                   </span>
                 </div>
 
@@ -371,20 +388,20 @@ export default function AdminOrdersPage() {
                     <th className="p-4 font-bold">Amount (INR)</th>
                     <th className="p-4 font-bold">USDC</th>
                     <th className="p-4 font-bold">Status</th>
-                    <th className="p-4 font-bold">Time</th>
+                    <th className="p-4 font-bold">Placed At</th>
                     <th className="p-4 font-bold text-right">Action</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {orders.map((order) => (
                     <tr
-                      key={order.id}
+                      key={order.orderId}
                       className="hover:bg-slate-50/40 transition-colors cursor-pointer"
                       onClick={() => setSelectedOrder(order)}
                     >
-                      <td className="p-4 font-bold text-slate-800">#{order.id}</td>
+                      <td className="p-4 font-bold text-slate-800">#{order.orderId}</td>
                       <td className="p-4 font-mono text-[10px] text-slate-500">
-                        {truncateAddress(order.user, 8, 6)}
+                        {truncateAddress(order.userAddress, 8, 6)}
                       </td>
                       <td className="p-4 font-bold text-slate-800">
                         {formatCurrency(order.fiatAmountHuman, 'INR')}
@@ -401,7 +418,7 @@ export default function AdminOrdersPage() {
                         </span>
                       </td>
                       <td className="p-4 text-slate-500">
-                        {getRelativeTime(new Date(Number(order.timestamp) * 1000).toISOString())}
+                        {getRelativeTime(new Date(Number(order.placedAt) * 1000).toISOString())}
                       </td>
                       <td className="p-4 text-right">
                         {order.isActionable ? (
@@ -471,7 +488,7 @@ export default function AdminOrdersPage() {
             <div className="grid grid-cols-2 gap-y-4 gap-x-4 text-xs">
               <div className="flex flex-col gap-1">
                 <span className="text-slate-500 font-semibold uppercase text-[9px] tracking-wider">Order ID</span>
-                <span className="font-bold text-slate-800">#{selectedOrder.id}</span>
+                <span className="font-bold text-slate-800">#{selectedOrder.orderId}</span>
               </div>
               <div className="flex flex-col gap-1">
                 <span className="text-slate-500 font-semibold uppercase text-[9px] tracking-wider">Network</span>
@@ -479,13 +496,35 @@ export default function AdminOrdersPage() {
               </div>
               <div className="flex flex-col gap-1 col-span-2">
                 <span className="text-slate-500 font-semibold uppercase text-[9px] tracking-wider">User Wallet</span>
-                <span className="font-mono text-[10px] text-slate-700 select-all break-all">{selectedOrder.user}</span>
+                <span className="font-mono text-[10px] text-slate-700 select-all break-all">{selectedOrder.userAddress}</span>
               </div>
-              <div className="flex flex-col gap-1 col-span-2">
+              <div className="flex flex-col gap-1">
                 <span className="text-slate-500 font-semibold uppercase text-[9px] tracking-wider">Placed At</span>
-                <span className="font-bold text-slate-800">
-                  {new Date(Number(selectedOrder.timestamp) * 1000).toLocaleString()}
-                </span>
+                <span className="font-bold text-slate-800">{formatTs(selectedOrder.placedAt)}</span>
+              </div>
+              {Number(selectedOrder.acceptedAt) > 0 && (
+                <div className="flex flex-col gap-1">
+                  <span className="text-slate-500 font-semibold uppercase text-[9px] tracking-wider">Accepted At</span>
+                  <span className="font-bold text-slate-800">{formatTs(selectedOrder.acceptedAt)}</span>
+                </div>
+              )}
+              {Number(selectedOrder.completedAt) > 0 && (
+                <div className="flex flex-col gap-1">
+                  <span className="text-slate-500 font-semibold uppercase text-[9px] tracking-wider">Completed At</span>
+                  <span className="font-bold text-emerald-600">{formatTs(selectedOrder.completedAt)}</span>
+                </div>
+              )}
+              <div className="col-span-2 flex flex-col gap-1 pt-1 border-t border-slate-100">
+                <span className="text-slate-500 font-semibold uppercase text-[9px] tracking-wider">Place Order Tx</span>
+                <a
+                  href={getExplorerUrl(selectedOrder.transactionHash)}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="font-mono text-[10px] text-blue-600 hover:underline break-all flex items-center gap-1"
+                >
+                  {selectedOrder.transactionHash}
+                  <ExternalLink className="w-3 h-3 flex-shrink-0" />
+                </a>
               </div>
               {selectedOrder.acceptTxHash && (
                 <div className="col-span-2 flex flex-col gap-1 pt-1 border-t border-slate-100">
@@ -520,7 +559,7 @@ export default function AdminOrdersPage() {
                 {selectedOrder.acceptState === 'loading' ? (
                   <><Loader2 className="w-4 h-4 animate-spin mr-2" />Sending acceptance transaction...</>
                 ) : (
-                  <><ShieldCheck className="w-4 h-4 mr-2" />Accept Order #{selectedOrder.id}</>
+                  <><ShieldCheck className="w-4 h-4 mr-2" />Accept Order #{selectedOrder.orderId}</>
                 )}
               </Button>
             )}

@@ -173,31 +173,89 @@ export default function CategoryPayPage() {
     let cancelled = false;
     let pollInterval: NodeJS.Timeout;
 
-    const orders = createOrders({
-      publicClient: chainPublicClient,
-      diamondAddress: (process.env.NEXT_PUBLIC_P2P_DIAMOND_ADDRESS || '0xeb0BB8E3c014D915D9B2df03aBB130a1Fb44beb9') as `0x${string}`,
-      usdcAddress: USDC_ADDRESS as `0x${string}`,
-      subgraphUrl: process.env.NEXT_PUBLIC_P2P_SUBGRAPH_URL || '',
-    });
+    const GET_ORDER_ABI = [
+      {
+        type: 'function',
+        name: 'getOrdersById',
+        stateMutability: 'view',
+        inputs: [{ name: 'orderId', type: 'uint256' }],
+        outputs: [
+          {
+            type: 'tuple',
+            components: [
+              { name: 'amount', type: 'uint256' },
+              { name: 'fiatAmount', type: 'uint256' },
+              { name: 'placedTimestamp', type: 'uint256' },
+              { name: 'completedTimestamp', type: 'uint256' },
+              { name: 'userCompletedTimestamp', type: 'uint256' },
+              { name: 'acceptedMerchant', type: 'address' },
+              { name: 'user', type: 'address' },
+              { name: 'recipientAddr', type: 'address' },
+              { name: 'pubkey', type: 'string' },
+              { name: 'encUpi', type: 'string' },
+              { name: 'userCompleted', type: 'bool' },
+              { name: 'status', type: 'uint8' },
+              { name: 'orderType', type: 'uint8' },
+              {
+                name: 'disputeInfo',
+                type: 'tuple',
+                components: [
+                  { name: 'raisedBy', type: 'uint8' },
+                  { name: 'status', type: 'uint8' },
+                  { name: 'redactTransId', type: 'uint256' },
+                  { name: 'accountNumber', type: 'uint256' },
+                ],
+              },
+              { name: 'id', type: 'uint256' },
+              { name: 'userPubKey', type: 'string' },
+              { name: 'encMerchantUpi', type: 'string' },
+              { name: 'acceptedAccountNo', type: 'uint256' },
+              { name: 'assignedAccountNos', type: 'uint256[]' },
+              { name: 'currency', type: 'bytes32' },
+              { name: 'preferredPaymentChannelConfigId', type: 'uint256' },
+              { name: 'circleId', type: 'uint256' },
+            ],
+          },
+        ],
+      },
+    ] as const;
+
+    const diamondAddress = (process.env.NEXT_PUBLIC_P2P_DIAMOND_ADDRESS || '0xeb0BB8E3c014D915D9B2df03aBB130a1Fb44beb9') as `0x${string}`;
 
     const poll = async () => {
       try {
-        const orderRes = await orders.getOrder({ orderId: BigInt(activeOrder.orderId) });
+        const orderData = await chainPublicClient.readContract({
+          address: diamondAddress,
+          abi: GET_ORDER_ABI,
+          functionName: 'getOrdersById',
+          args: [BigInt(activeOrder.orderId)],
+        });
+
         if (cancelled) return;
 
-        if (orderRes.isOk()) {
-          const rawStatus = orderRes.value.status as any;
-          const statusStr = String(rawStatus);
+        if (orderData) {
+          const contractStatus = orderData.status; // 0=PLACED, 1=ACCEPTED, 2=PAID, 3=COMPLETED, 4=CANCELLED
+          
+          // Map to SDK status strings used by frontend:
+          // 1 -> ACCEPTED
+          // 2 -> UPI_SET (settling)
+          // 5 -> COMPLETED
+          // 6 -> CANCELLED
+          let statusStr = '0';
+          if (contractStatus === 1) statusStr = '1';
+          else if (contractStatus === 2) statusStr = '2';
+          else if (contractStatus === 3) statusStr = '5';
+          else if (contractStatus === 4) statusStr = '6';
 
-          console.log(`[Escrow Polling] Order ${activeOrder.orderId} status is ${statusStr}`);
+          console.log(`[Escrow Polling] Order ${activeOrder.orderId} contract status is ${contractStatus} -> mapped to ${statusStr}`);
 
           // Status 1 = ACCEPTED (merchant has accepted the order, waiting for UPI set/USDC transfer)
           if (statusStr === '1') {
-            if (orderRes.value.pubkey) {
+            if (orderData.pubkey) {
               setMerchantInfo({
-                address: orderRes.value.acceptedMerchant,
-                pubkey: orderRes.value.pubkey,
-                amount: orderRes.value.usdcAmount,
+                address: orderData.acceptedMerchant,
+                pubkey: orderData.pubkey,
+                amount: orderData.amount,
               });
               
               // Only change step if we are currently in 'matching'
@@ -207,8 +265,8 @@ export default function CategoryPayPage() {
             }
           }
 
-          // Status 2 = UPI_SET or status 3 = USER_COMPLETED (USDC has been transferred, waiting for merchant payout)
-          if (statusStr === '2' || statusStr === '3') {
+          // Status 2 = UPI_SET (USDC has been transferred, waiting for merchant payout)
+          if (statusStr === '2') {
             setEscrowStep('settling');
           }
 

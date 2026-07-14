@@ -11,6 +11,7 @@ import {
   TrendingUp,
   LayoutDashboard,
   LogOut,
+  ShoppingBag,
 } from 'lucide-react';
 import { useAuth } from '@/hooks/use-auth';
 import { cn } from '@/lib/utils';
@@ -35,6 +36,7 @@ export default function AdminLayout({
 
   const navItems = [
     { label: 'Overview', href: '/admin', icon: BarChart3 },
+    { label: 'Orders', href: '/admin/orders', icon: ShoppingBag },
     { label: 'Users', href: '/admin/users', icon: Users },
     { label: 'Transactions', href: '/admin/transactions', icon: ArrowLeftRight },
     { label: 'Analytics', href: '/admin/analytics', icon: TrendingUp },
@@ -42,6 +44,7 @@ export default function AdminLayout({
 
   const getHeaderTitle = () => {
     if (pathname === '/admin') return 'Admin Overview';
+    if (pathname === '/admin/orders') return 'Order Management';
     if (pathname === '/admin/users') return 'User Management';
     if (pathname === '/admin/transactions') return 'Transaction Monitoring';
     if (pathname === '/admin/analytics') return 'Analytics & Revenue';

@@ -77,7 +77,7 @@ export const PaymentService = {
         const orders = createOrders({
           publicClient,
           diamondAddress: (process.env.NEXT_PUBLIC_P2P_DIAMOND_ADDRESS || '0xeb0BB8E3c014D915D9B2df03aBB130a1Fb44beb9') as `0x${string}`,
-          usdcAddress: (process.env.NEXT_PUBLIC_USDC_ADDRESS || USDC_ADDRESS) as `0x${string}`,
+          usdcAddress: USDC_ADDRESS as `0x${string}`,
           subgraphUrl: process.env.NEXT_PUBLIC_P2P_SUBGRAPH_URL || '',
         });
 
@@ -258,7 +258,7 @@ export const PaymentService = {
       const orders = createOrders({
         publicClient,
         diamondAddress: (process.env.NEXT_PUBLIC_P2P_DIAMOND_ADDRESS || '0xeb0BB8E3c014D915D9B2df03aBB130a1Fb44beb9') as `0x${string}`,
-        usdcAddress: (process.env.NEXT_PUBLIC_USDC_ADDRESS || USDC_ADDRESS) as `0x${string}`,
+        usdcAddress: USDC_ADDRESS as `0x${string}`,
         subgraphUrl: process.env.NEXT_PUBLIC_P2P_SUBGRAPH_URL || '',
       });
 

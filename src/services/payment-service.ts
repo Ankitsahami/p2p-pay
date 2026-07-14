@@ -86,6 +86,7 @@ export const PaymentService = {
         const approveResult = await orders.approveUsdc.execute({
           walletClient,
           amount: totalUsdcVal,
+          waitForReceipt: true,
         });
 
         if (approveResult.isErr()) {

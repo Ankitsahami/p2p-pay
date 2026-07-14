@@ -364,15 +364,73 @@ export const PaymentService = {
       const maxAttempts = 15; // increased to 15 to allow time for user prompt approval
       let upiSetTriggered = false;
 
+      const GET_ORDER_ABI = [
+        {
+          type: 'function',
+          name: 'getOrdersById',
+          stateMutability: 'view',
+          inputs: [{ name: 'orderId', type: 'uint256' }],
+          outputs: [
+            {
+              type: 'tuple',
+              components: [
+                { name: 'amount', type: 'uint256' },
+                { name: 'fiatAmount', type: 'uint256' },
+                { name: 'placedTimestamp', type: 'uint256' },
+                { name: 'completedTimestamp', type: 'uint256' },
+                { name: 'userCompletedTimestamp', type: 'uint256' },
+                { name: 'acceptedMerchant', type: 'address' },
+                { name: 'user', type: 'address' },
+                { name: 'recipientAddr', type: 'address' },
+                { name: 'pubkey', type: 'string' },
+                { name: 'encUpi', type: 'string' },
+                { name: 'userCompleted', type: 'bool' },
+                { name: 'status', type: 'uint8' },
+                { name: 'orderType', type: 'uint8' },
+                {
+                  name: 'disputeInfo',
+                  type: 'tuple',
+                  components: [
+                    { name: 'raisedBy', type: 'uint8' },
+                    { name: 'status', type: 'uint8' },
+                    { name: 'redactTransId', type: 'uint256' },
+                    { name: 'accountNumber', type: 'uint256' },
+                  ],
+                },
+                { name: 'id', type: 'uint256' },
+                { name: 'userPubKey', type: 'string' },
+                { name: 'encMerchantUpi', type: 'string' },
+                { name: 'acceptedAccountNo', type: 'uint256' },
+                { name: 'assignedAccountNos', type: 'uint256[]' },
+                { name: 'currency', type: 'bytes32' },
+                { name: 'preferredPaymentChannelConfigId', type: 'uint256' },
+                { name: 'circleId', type: 'uint256' },
+              ],
+            },
+          ],
+        },
+      ] as const;
+
+      const diamondAddress = (process.env.NEXT_PUBLIC_P2P_DIAMOND_ADDRESS || '0xeb0BB8E3c014D915D9B2df03aBB130a1Fb44beb9') as `0x${string}`;
+
       while (attempts < maxAttempts) {
         try {
-          const orderRes = await orders.getOrder({ orderId: BigInt(order.orderId) });
-          if (orderRes.isOk()) {
-            const rawStatus = orderRes.value.status as any;
+          console.log(`[Escrow] Fetching order ${order.orderId} status from contract...`);
+          const orderData = await publicClient.readContract({
+            address: diamondAddress,
+            abi: GET_ORDER_ABI,
+            functionName: 'getOrdersById',
+            args: [BigInt(order.orderId)],
+          });
+
+          if (orderData) {
+            const rawStatus = orderData.status;
             const statusStr = String(rawStatus);
 
+            console.log(`[Escrow] Order status: ${statusStr} (pubkey: ${orderData.pubkey ? 'yes' : 'no'})`);
+
             // Status 1 = ACCEPTED (merchant has accepted the order)
-            if (statusStr === '1' && !upiSetTriggered && orderRes.value.pubkey) {
+            if (statusStr === '1' && !upiSetTriggered && orderData.pubkey) {
               upiSetTriggered = true;
               console.log(`[Escrow] Order ACCEPTED on-chain by merchant. Triggering setSellOrderUpi to pull USDC...`);
               onStatusChange('processing'); // Transition UI to processing for the wallet approval popup
@@ -383,8 +441,8 @@ export const PaymentService = {
                   walletClient,
                   orderId: BigInt(order.orderId),
                   paymentAddress: providerUpi,
-                  merchantPublicKey: orderRes.value.pubkey,
-                  updatedAmount: orderRes.value.usdcAmount, // net amount (actual amount to pull)
+                  merchantPublicKey: orderData.pubkey,
+                  updatedAmount: orderData.amount, // net amount (actual amount to pull)
                   waitForReceipt: true,
                 });
 
@@ -403,11 +461,13 @@ export const PaymentService = {
               }
             }
 
-            if (rawStatus === 'completed' || rawStatus === 'COMPLETED' || statusStr === '5') {
+            // Status 3 = COMPLETED (or status 5 in legacy / dispute mapping)
+            if (statusStr === '3' || statusStr === '5') {
               status = 'completed';
               break;
             }
-            if (rawStatus === 'cancelled' || rawStatus === 'CANCELLED' || statusStr === '6') {
+            // Status 4 = CANCELLED (or status 6 in legacy / dispute mapping)
+            if (statusStr === '4' || statusStr === '6') {
               status = 'cancelled';
               break;
             }

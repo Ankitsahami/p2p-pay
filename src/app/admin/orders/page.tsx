@@ -25,11 +25,11 @@ import { useWallets } from '@privy-io/react-auth';
 const ACCEPT_ORDER_ABI = [
   {
     type: 'function',
-    name: 'acceptOrder',
+    name: 'acceptSellOrder',
     stateMutability: 'nonpayable',
     inputs: [
       { name: 'orderId', type: 'uint256' },
-      { name: 'pubKey', type: 'string' },
+      { name: 'merchantPubkey', type: 'string' },
     ],
     outputs: [],
   },
@@ -197,7 +197,7 @@ export default function AdminOrdersPage() {
         const txHash = await walletClient.writeContract({
           address: DIAMOND_ADDRESS,
           abi: ACCEPT_ORDER_ABI,
-          functionName: 'acceptOrder',
+          functionName: 'acceptSellOrder',
           args: [orderId, MERCHANT_PUBKEY],
         });
 

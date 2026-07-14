@@ -259,22 +259,6 @@ export const PaymentService = {
           console.error('Error saving payment transaction:', saveErr);
         }
 
-        // ═══════════════════════════════════════════════════════════════
-        // STEP 4: Set UPI destination (done silently, no user popup)
-        //         We catch errors here because this step is non-critical
-        //         and the order is already placed on-chain.
-        // ═══════════════════════════════════════════════════════════════
-        try {
-          await orders.setSellOrderUpi.execute({
-            walletClient,
-            orderId: BigInt(orderId),
-            paymentAddress: providerUpi,
-            merchantPublicKey: '0x0000000000000000000000000000000000000000000000000000000000000000',
-            updatedAmount: totalUsdcVal,
-          });
-        } catch (upiErr) {
-          console.error('Error setting UPI destination (non-critical):', upiErr);
-        }
 
         return {
           orderId,
@@ -377,18 +361,53 @@ export const PaymentService = {
 
       let status: PaymentOrderStatus = 'pending';
       let attempts = 0;
-      const maxAttempts = 10;
+      const maxAttempts = 15; // increased to 15 to allow time for user prompt approval
+      let upiSetTriggered = false;
 
       while (attempts < maxAttempts) {
         try {
           const orderRes = await orders.getOrder({ orderId: BigInt(order.orderId) });
           if (orderRes.isOk()) {
             const rawStatus = orderRes.value.status as any;
-            if (rawStatus === 'completed' || rawStatus === 'COMPLETED' || String(rawStatus) === '5') {
+            const statusStr = String(rawStatus);
+
+            // Status 1 = ACCEPTED (merchant has accepted the order)
+            if (statusStr === '1' && !upiSetTriggered && orderRes.value.pubkey) {
+              upiSetTriggered = true;
+              console.log(`[Escrow] Order ACCEPTED on-chain by merchant. Triggering setSellOrderUpi to pull USDC...`);
+              onStatusChange('processing'); // Transition UI to processing for the wallet approval popup
+
+              try {
+                const providerUpi = `${order.billDetails?.provider.id || 'utility'}@upi`;
+                const upiResult = await orders.setSellOrderUpi.execute({
+                  walletClient,
+                  orderId: BigInt(order.orderId),
+                  paymentAddress: providerUpi,
+                  merchantPublicKey: orderRes.value.pubkey,
+                  updatedAmount: orderRes.value.amount, // net amount (actual amount to pull)
+                  waitForReceipt: true,
+                });
+
+                if (upiResult.isOk()) {
+                  console.log(`[Escrow] setSellOrderUpi succeeded. Tx hash: ${upiResult.value.hash}`);
+                  onStatusChange('waiting_settlement', upiResult.value.hash);
+                } else {
+                  console.error(`[Escrow] setSellOrderUpi failed:`, upiResult.error.message);
+                  upiSetTriggered = false; // Reset to allow retry
+                  onStatusChange('waiting_settlement');
+                }
+              } catch (upiErr: any) {
+                console.error(`[Escrow] Error executing setSellOrderUpi:`, upiErr);
+                upiSetTriggered = false; // Reset to allow retry
+                onStatusChange('waiting_settlement');
+              }
+            }
+
+            if (rawStatus === 'completed' || rawStatus === 'COMPLETED' || statusStr === '5') {
               status = 'completed';
               break;
             }
-            if (rawStatus === 'cancelled' || rawStatus === 'CANCELLED' || String(rawStatus) === '6') {
+            if (rawStatus === 'cancelled' || rawStatus === 'CANCELLED' || statusStr === '6') {
               status = 'cancelled';
               break;
             }
@@ -396,7 +415,7 @@ export const PaymentService = {
         } catch (e) {
           console.error('Error fetching order status:', e);
         }
-        await delay(2000);
+        await delay(2500);
         attempts++;
       }
 

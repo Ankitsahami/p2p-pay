@@ -129,8 +129,11 @@ export default function CategoryPayPage() {
         }
       }
 
-      // Create initial order details
+      // Create initial order details (escrow lock)
       const order = await PaymentService.initiateBillPayment(billDetails, quote, walletAddress, walletClient);
+      if (order.txHash) {
+        setEscrowTxHash(order.txHash);
+      }
 
       // Simulate/Execute full on-chain status changes
       const finalOrder = await PaymentService.simulatePaymentStatus(order, (status, hash) => {
@@ -229,7 +232,7 @@ export default function CategoryPayPage() {
               <span className="text-slate-500 font-semibold uppercase text-[9px] tracking-wider">Paid To (Merchant)</span>
               <span className="font-bold text-slate-800 flex flex-col items-end">
                 <span>Goofy Faucet Merchant</span>
-                <span className="font-mono text-[9px] text-slate-400 font-normal">0x3b1B...04d</span>
+                <span className="font-mono text-[9px] text-slate-400 font-normal">0x350E...30F</span>
               </span>
             </div>
             <div className="flex justify-between items-center pt-2">

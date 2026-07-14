@@ -126,7 +126,7 @@ export const PaymentService = {
             type: 'bill_payment',
             category: billDetails.provider.category,
             merchant: 'Goofy Faucet Merchant',
-            merchantAddress: '0x3b1B9C56A495820bA2Bb87F335Bd1040d',
+            merchantAddress: '0x350E52598C8d5A6EFAb6f33C2115C6AAE9cB930F',
             description: `${billDetails.provider.name} Bill Payment via Escrow`,
             fiatAmount: billDetails.amount,
             fiatCurrency: billDetails.currency,

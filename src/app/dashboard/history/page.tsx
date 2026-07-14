@@ -246,7 +246,6 @@ export default function HistoryPage() {
           </div>
           );
         })()}
-        )}
       </Modal>
     </div>
   );

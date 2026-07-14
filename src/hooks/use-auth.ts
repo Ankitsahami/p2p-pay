@@ -49,7 +49,7 @@ export const useAuth = () => {
         setUser(null);
       }
     }
-  }, [privy.ready, privy.authenticated, privy.user, setUser]);
+  }, [privy.ready, privy.authenticated, privy.user, setUser, smartWalletClient?.account?.address, wallets]);
 
   const login = async () => {
     try {

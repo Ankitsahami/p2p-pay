@@ -33,6 +33,9 @@ export default function CategoryPayPage() {
   const { client: smartWalletClient } = useSmartWallets();
 
   const categoryId = params.category as string;
+  const activeUserAddress = React.useMemo(() => {
+    return smartWalletClient?.account?.address || walletAddress || '';
+  }, [smartWalletClient?.account?.address, walletAddress]);
   const urlProviderId = searchParams.get('providerId');
   const urlConsumerNum = searchParams.get('consumerNumber');
 
@@ -106,7 +109,7 @@ export default function CategoryPayPage() {
   };
 
   const handlePay = async () => {
-    if (!billDetails || !quote || !walletAddress) return;
+    if (!billDetails || !quote || !activeUserAddress) return;
 
     setIsPaying(true);
     setPayStatus('pending');
@@ -130,7 +133,7 @@ export default function CategoryPayPage() {
       }
 
       // Create initial order details (escrow lock)
-      const order = await PaymentService.initiateBillPayment(billDetails, quote, walletAddress, walletClient);
+      const order = await PaymentService.initiateBillPayment(billDetails, quote, activeUserAddress, walletClient);
       if (order.txHash) {
         setEscrowTxHash(order.txHash);
       }
@@ -226,7 +229,7 @@ export default function CategoryPayPage() {
             </div>
             <div className="flex justify-between items-center pt-2">
               <span className="text-slate-500 font-semibold uppercase text-[9px] tracking-wider">Paid By</span>
-              <span className="font-mono text-slate-800 font-bold">{walletAddress ? `${walletAddress.slice(0, 6)}...${walletAddress.slice(-4)}` : 'Smart Account'}</span>
+              <span className="font-mono text-slate-800 font-bold">{activeUserAddress ? `${activeUserAddress.slice(0, 6)}...${activeUserAddress.slice(-4)}` : 'Smart Account'}</span>
             </div>
             <div className="flex justify-between items-center pt-2">
               <span className="text-slate-500 font-semibold uppercase text-[9px] tracking-wider">Paid To (Merchant)</span>

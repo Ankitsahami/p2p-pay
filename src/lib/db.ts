@@ -1,6 +1,13 @@
 import { createClient } from '@libsql/client';
 
-const url = process.env.TURSO_DATABASE_URL || 'file:local.db';
+let url = process.env.TURSO_DATABASE_URL;
+
+if (!url) {
+  // Serverless environments (like Vercel) have a read-only filesystem, except for '/tmp'
+  const isServerless = process.env.VERCEL || process.env.LAMBDA_TASK_ROOT || process.env.AWS_EXECUTION_ENV;
+  url = isServerless ? 'file:/tmp/local.db' : 'file:local.db';
+}
+
 const authToken = process.env.TURSO_AUTH_TOKEN || '';
 
 export const db = createClient({

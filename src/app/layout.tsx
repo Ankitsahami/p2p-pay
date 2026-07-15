@@ -35,13 +35,31 @@ export const metadata: Metadata = {
 
 import { initDb } from '@/lib/db';
 
+// Inline script to apply theme before first paint (prevents flash)
+const themeInitScript = `
+(function() {
+  try {
+    var stored = localStorage.getItem('p2p-pay-theme');
+    var theme = stored ? JSON.parse(stored).state?.theme : 'dark';
+    if (theme !== 'light') {
+      document.documentElement.classList.add('dark');
+    }
+  } catch(e) {
+    document.documentElement.classList.add('dark');
+  }
+})();
+`;
+
 export default function RootLayout({ children }: { children: React.ReactNode }) {
-  // Initialize database tables on server-side startup/render
   initDb().catch((err) => console.error('[DB] Initialization failed:', err));
 
   return (
-    <html lang="en" className={`${barlow.variable} ${instrumentSerif.variable} light`}>
-      <body className="bg-[#F8F9FC] text-slate-900 min-h-screen font-sans antialiased overflow-x-hidden">
+    <html lang="en" className={`${barlow.variable} ${instrumentSerif.variable}`} suppressHydrationWarning>
+      <head>
+        {/* No-flash theme script — runs before React hydrates */}
+        <script dangerouslySetInnerHTML={{ __html: themeInitScript }} />
+      </head>
+      <body className="bg-[#F8F9FC] dark:bg-black text-slate-900 dark:text-white min-h-screen font-sans antialiased overflow-x-hidden transition-colors duration-300">
         <AppProviders>{children}</AppProviders>
       </body>
     </html>

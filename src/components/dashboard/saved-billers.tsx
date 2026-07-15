@@ -6,12 +6,16 @@ import { Plus, Zap, Droplets, Flame, Smartphone, Tv, Wifi } from 'lucide-react';
 import { Card } from '@/components/ui/card';
 import { useUserStore } from '@/stores/user-store';
 import { useWallet } from '@/hooks/use-wallet';
+import { useThemeStore } from '@/stores/theme-store';
 import { formatCurrency } from '@/lib/utils';
+import { cn } from '@/lib/utils';
 
 export const SavedBillers = () => {
   const router = useRouter();
   const { savedBillers } = useUserStore();
   const { activeCurrency } = useWallet();
+  const { theme } = useThemeStore();
+  const isDark = theme === 'dark';
 
   const getCategoryIcon = (category: string) => {
     const styles = 'w-4 h-4 text-white';
@@ -27,8 +31,8 @@ export const SavedBillers = () => {
     <div className="flex flex-col gap-4 select-none">
       <div className="flex items-center justify-between">
         <div>
-          <h3 className="text-sm font-bold text-slate-800">Saved Billers</h3>
-          <p className="text-[10px] text-slate-500 mt-0.5">Quick access to frequent accounts</p>
+          <h3 className={cn("text-sm font-bold", isDark ? "text-white" : "text-slate-800")}>Saved Billers</h3>
+          <p className={cn("text-[10px]", isDark ? "text-white/50" : "text-slate-500 mt-0.5")}>Quick access to frequent accounts</p>
         </div>
       </div>
 
@@ -38,28 +42,28 @@ export const SavedBillers = () => {
           <Card
             key={biller.id}
             onClick={() => router.push(`/dashboard/pay/${biller.category}?providerId=${biller.provider.id}&consumerNumber=${biller.consumerNumber}`)}
-            className="flex-shrink-0 w-44 p-4 flex flex-col gap-3 justify-between cursor-pointer border border-slate-100 bg-white hover:border-slate-200 hover:shadow-sm transition-all"
+            className="flex-shrink-0 w-44 p-4 flex flex-col gap-3 justify-between cursor-pointer"
           >
             <div className="flex items-start justify-between">
               {getCategoryIcon(biller.category)}
-              <span className="text-[9px] font-bold text-slate-500 uppercase truncate max-w-[80px]">
+              <span className={cn("text-[9px] font-bold uppercase truncate max-w-[80px]", isDark ? "text-white/50" : "text-slate-500")}>
                 {biller.provider.name}
               </span>
             </div>
 
             <div className="flex flex-col gap-0.5 mt-2">
-              <h4 className="text-xs font-bold text-slate-800 truncate">
+              <h4 className={cn("text-xs font-bold truncate", isDark ? "text-white" : "text-slate-800")}>
                 {biller.nickname || biller.consumerName}
               </h4>
-              <span className="text-[9px] text-slate-500 font-semibold truncate">
+              <span className={cn("text-[9px] font-semibold truncate", isDark ? "text-white/40" : "text-slate-500")}>
                 {biller.consumerNumber}
               </span>
             </div>
 
             {biller.lastPaidAmount && (
-              <div className="border-t border-slate-100 pt-2 mt-1 flex justify-between text-[9px] text-slate-500 font-medium">
+              <div className={cn("border-t pt-2 mt-1 flex justify-between text-[9px] font-medium", isDark ? "border-white/5 text-white/40" : "border-slate-100 text-slate-500")}>
                 <span>Last Paid</span>
-                <span className="font-bold text-slate-800">
+                <span className={cn("font-bold", isDark ? "text-white" : "text-slate-800")}>
                   {formatCurrency(biller.lastPaidAmount, activeCurrency)}
                 </span>
               </div>
@@ -70,9 +74,17 @@ export const SavedBillers = () => {
         {/* Add Biller Action Card */}
         <button
           onClick={() => router.push('/dashboard/pay')}
-          className="flex-shrink-0 w-44 h-[130px] rounded-2xl border border-dashed border-slate-200 hover:border-slate-400 bg-white flex flex-col items-center justify-center gap-2 hover:bg-slate-50 active:scale-95 transition-all text-slate-500 hover:text-slate-700 cursor-pointer shadow-sm"
+          className={cn(
+            "flex-shrink-0 w-44 h-[130px] rounded-2xl border border-dashed flex flex-col items-center justify-center gap-2 active:scale-95 transition-all cursor-pointer shadow-sm",
+            isDark
+              ? "border-white/20 hover:border-white/40 bg-white/5 hover:bg-white/10 text-white/50 hover:text-white"
+              : "border-slate-200 hover:border-slate-400 bg-white hover:bg-slate-50 text-slate-500 hover:text-slate-700"
+          )}
         >
-          <div className="p-2 bg-slate-50 border border-slate-200 rounded-xl">
+          <div className={cn(
+            "p-2 border rounded-xl",
+            isDark ? "bg-white/5 border-white/10" : "bg-slate-50 border-slate-200"
+          )}>
             <Plus className="w-4 h-4" />
           </div>
           <span className="text-[10px] font-bold uppercase tracking-wider">Add New Biller</span>

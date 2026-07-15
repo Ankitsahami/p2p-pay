@@ -22,8 +22,11 @@ export const Card = React.forwardRef<HTMLDivElement, CardProps>(
       <div
         ref={ref}
         className={cn(
-          'glass-card-static',
-          hover && 'hover:bg-white/[0.06] hover:border-white/20 transition-all duration-300',
+          // Light mode: white/glass card
+          'bg-white border border-slate-100 rounded-2xl shadow-sm',
+          // Dark mode: liquid-glass
+          'dark:bg-white/[0.04] dark:border-white/[0.08] dark:shadow-none dark:backdrop-blur-md',
+          hover && 'hover:border-slate-200 dark:hover:bg-white/[0.07] dark:hover:border-white/[0.12] transition-all duration-300',
           paddings[padding],
           className
         )}

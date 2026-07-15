@@ -45,14 +45,14 @@ export default function DashboardLayout({
 
   if (!ready || !isAuthenticated) {
     return (
-      <div className="min-h-screen bg-[#F8F9FC] flex items-center justify-center">
+      <div className="min-h-screen bg-[#F8F9FC] dark:bg-black flex items-center justify-center">
         <div className="w-8 h-8 rounded-full border-4 border-blue-500 border-t-transparent animate-spin" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-[#F8F9FC] flex overflow-hidden">
+    <div className="min-h-screen bg-[#F8F9FC] dark:bg-black flex overflow-hidden transition-colors duration-300">
       {/* Sidebar for Desktop */}
       <Sidebar />
 

@@ -4,6 +4,7 @@ import * as React from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { Toaster } from 'react-hot-toast';
 import { PrivyAuthProvider } from './privy-provider';
+import { ThemeProvider } from './theme-provider';
 import dynamic from 'next/dynamic';
 import { createPublicClient, http } from 'viem';
 import { baseSepolia } from 'viem/chains';
@@ -37,7 +38,8 @@ export const AppProviders = ({ children }: { children: React.ReactNode }) => {
   return (
     <QueryClientProvider client={queryClient}>
       <PrivyAuthProvider>
-        <SdkProvider
+        <ThemeProvider>
+          <SdkProvider
           publicClient={publicClient}
           subgraphUrl={subgraphUrl}
           diamondAddress={diamondAddress}
@@ -71,6 +73,7 @@ export const AppProviders = ({ children }: { children: React.ReactNode }) => {
             }}
           />
         </SdkProvider>
+        </ThemeProvider>
       </PrivyAuthProvider>
     </QueryClientProvider>
   );

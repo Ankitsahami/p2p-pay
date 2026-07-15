@@ -8,7 +8,11 @@ interface SkeletonProps extends React.HTMLAttributes<HTMLDivElement> {}
 export const Skeleton = ({ className, ...props }: SkeletonProps) => {
   return (
     <div
-      className={cn('shimmer rounded-xl w-full h-8', className)}
+      className={cn(
+        'rounded-xl w-full h-8 animate-pulse',
+        'bg-slate-200/60 dark:bg-white/[0.06]',
+        className
+      )}
       {...props}
     />
   );
@@ -17,7 +21,12 @@ export const Skeleton = ({ className, ...props }: SkeletonProps) => {
 export const SkeletonCircle = ({ className, size = 'w-12 h-12', ...props }: SkeletonProps & { size?: string }) => {
   return (
     <div
-      className={cn('shimmer rounded-full', size, className)}
+      className={cn(
+        'rounded-full animate-pulse',
+        'bg-slate-200/60 dark:bg-white/[0.06]',
+        size,
+        className
+      )}
       {...props}
     />
   );
@@ -35,7 +44,8 @@ export const SkeletonText = ({
         <div
           key={index}
           className={cn(
-            'shimmer rounded h-4',
+            'rounded h-4 animate-pulse',
+            'bg-slate-200/60 dark:bg-white/[0.06]',
             index === lines - 1 && lines > 1 ? 'w-[60%]' : 'w-full'
           )}
         />
@@ -48,7 +58,8 @@ export const SkeletonCard = ({ className, ...props }: SkeletonProps) => {
   return (
     <div
       className={cn(
-        'glass-card-static w-full p-6 flex flex-col gap-4 border border-white/[0.04]',
+        'w-full p-6 flex flex-col gap-4 border rounded-2xl',
+        'bg-white border-slate-100 dark:bg-white/[0.04] dark:border-white/[0.08]',
         className
       )}
       {...props}

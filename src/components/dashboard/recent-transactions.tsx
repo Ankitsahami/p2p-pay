@@ -10,12 +10,16 @@ import { Button } from '@/components/ui/button';
 import { useWallet } from '@/hooks/use-wallet';
 import { useAuth } from '@/hooks/use-auth';
 import { WalletService } from '@/services/wallet-service';
+import { useThemeStore } from '@/stores/theme-store';
 import { formatCurrency, getRelativeTime, formatCrypto, truncateAddress, getExplorerUrl } from '@/lib/utils';
 import { type Transaction } from '@/types';
+import { cn } from '@/lib/utils';
 
 export const RecentTransactions = () => {
   const { activeCurrency } = useWallet();
   const { walletAddress } = useAuth();
+  const { theme } = useThemeStore();
+  const isDark = theme === 'dark';
   const [transactions, setTransactions] = React.useState<Transaction[]>([]);
   const [selectedTx, setSelectedTx] = React.useState<Transaction | null>(null);
 
@@ -52,11 +56,11 @@ export const RecentTransactions = () => {
   };
 
   return (
-    <Card className="p-5 select-none bg-white border border-slate-100 shadow-sm" padding="none">
-      <div className="flex items-center justify-between px-5 py-4 border-b border-slate-100">
+    <Card className="p-0 select-none overflow-hidden" padding="none">
+      <div className={cn("flex items-center justify-between px-5 py-4 border-b", isDark ? "border-white/5" : "border-slate-100")}>
         <div>
-          <h3 className="text-sm font-bold text-slate-800">Recent Transactions</h3>
-          <p className="text-[10px] text-slate-500 mt-0.5">Your latest billing and transfer activities</p>
+          <h3 className={cn("text-sm font-bold", isDark ? "text-white" : "text-slate-800")}>Recent Transactions</h3>
+          <p className={cn("text-[10px]", isDark ? "text-white/50 mt-0.5" : "text-slate-500 mt-0.5")}>Your latest billing and transfer activities</p>
         </div>
         <Link
           href="/dashboard/history"
@@ -67,9 +71,9 @@ export const RecentTransactions = () => {
         </Link>
       </div>
 
-      <div className="divide-y divide-slate-100">
+      <div className={cn("divide-y", isDark ? "divide-white/5" : "divide-slate-100")}>
         {transactions.length === 0 ? (
-          <div className="px-5 py-8 text-center text-xs text-slate-500">
+          <div className={cn("px-5 py-8 text-center text-xs", isDark ? "text-white/40" : "text-slate-500")}>
             No transactions found
           </div>
         ) : (
@@ -77,22 +81,28 @@ export const RecentTransactions = () => {
             <button
               key={tx.id}
               onClick={() => setSelectedTx(tx)}
-              className="w-full px-5 py-4 flex items-center justify-between hover:bg-slate-50/50 transition-colors text-left cursor-pointer"
+              className={cn(
+                "w-full px-5 py-4 flex items-center justify-between transition-colors text-left cursor-pointer",
+                isDark ? "hover:bg-white/5" : "hover:bg-slate-50/50"
+              )}
             >
               <div className="flex items-center gap-4">
-                <div className="w-10 h-10 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center">
+                <div className={cn(
+                  "w-10 h-10 rounded-xl border flex items-center justify-center",
+                  isDark ? "bg-white/5 border-white/10" : "bg-slate-50 border-slate-100"
+                )}>
                   {getIcon(tx.type)}
                 </div>
                 <div className="flex flex-col gap-0.5">
-                  <span className="text-xs font-bold text-slate-800 max-w-[150px] sm:max-w-[240px] truncate">
+                  <span className={cn("text-xs font-bold max-w-[150px] sm:max-w-[240px] truncate", isDark ? "text-white" : "text-slate-800")}>
                     {tx.merchant || tx.description}
                   </span>
-                  <span className="text-[10px] text-slate-500 font-semibold">{getRelativeTime(tx.timestamp)}</span>
+                  <span className={cn("text-[10px] font-semibold", isDark ? "text-white/40" : "text-slate-500")}>{getRelativeTime(tx.timestamp)}</span>
                 </div>
               </div>
 
               <div className="flex flex-col items-end gap-1.5">
-                <span className="text-xs font-bold text-slate-900">
+                <span className={cn("text-xs font-bold", isDark ? "text-white" : "text-slate-900")}>
                   {tx.type === 'deposit' ? '+' : '-'}
                   {formatCurrency(tx.fiatAmount, activeCurrency)}
                 </span>
@@ -113,17 +123,20 @@ export const RecentTransactions = () => {
         size="md"
       >
         {selectedTx && (
-          <div className="flex flex-col gap-6 select-none text-slate-850">
+          <div className={cn("flex flex-col gap-6 select-none", isDark ? "text-white/90" : "text-slate-850")}>
             {/* Header Status */}
-            <div className="flex flex-col items-center text-center pb-4 border-b border-slate-100">
-              <div className="w-12 h-12 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-center mb-3">
+            <div className={cn("flex flex-col items-center text-center pb-4 border-b", isDark ? "border-white/5" : "border-slate-100")}>
+              <div className={cn(
+                "w-12 h-12 rounded-2xl border flex items-center justify-center mb-3",
+                isDark ? "bg-white/5 border-white/10" : "bg-slate-50 border-slate-100"
+              )}>
                 {getIcon(selectedTx.type)}
               </div>
-              <h4 className="text-lg font-extrabold text-slate-900">
+              <h4 className={cn("text-lg font-extrabold", isDark ? "text-white" : "text-slate-900")}>
                 {selectedTx.type === 'deposit' ? '+' : '-'}
                 {formatCurrency(selectedTx.fiatAmount, activeCurrency)}
               </h4>
-              <p className="text-xs text-slate-500 mt-1">{selectedTx.description}</p>
+              <p className={cn("text-xs mt-1", isDark ? "text-white/50" : "text-slate-500")}>{selectedTx.description}</p>
               <Badge variant={getStatusVariant(selectedTx.status)} size="md" className="mt-3 capitalize">
                 {selectedTx.status}
               </Badge>
@@ -132,33 +145,33 @@ export const RecentTransactions = () => {
             {/* Info Grid */}
             <div className="grid grid-cols-2 gap-y-4 gap-x-2 text-xs">
               <div className="flex flex-col gap-1">
-                <span className="text-slate-500 font-semibold uppercase text-[9px] tracking-wider">Transaction ID</span>
-                <span className="font-bold text-slate-800">{selectedTx.id}</span>
+                <span className={cn("font-semibold uppercase text-[9px] tracking-wider", isDark ? "text-white/40" : "text-slate-500")}>Transaction ID</span>
+                <span className={cn("font-bold", isDark ? "text-white" : "text-slate-800")}>{selectedTx.id}</span>
               </div>
               <div className="flex flex-col gap-1">
-                <span className="text-slate-500 font-semibold uppercase text-[9px] tracking-wider">Asset Dues</span>
-                <span className="font-bold text-slate-800">
+                <span className={cn("font-semibold uppercase text-[9px] tracking-wider", isDark ? "text-white/40" : "text-slate-500")}>Asset Dues</span>
+                <span className={cn("font-bold", isDark ? "text-white" : "text-slate-800")}>
                   {formatCrypto(selectedTx.cryptoAmount, 4)} {selectedTx.token}
                 </span>
               </div>
               <div className="flex flex-col gap-1">
-                <span className="text-slate-500 font-semibold uppercase text-[9px] tracking-wider">Network</span>
-                <span className="font-bold text-slate-800">{selectedTx.network}</span>
+                <span className={cn("font-semibold uppercase text-[9px] tracking-wider", isDark ? "text-white/40" : "text-slate-500")}>Network</span>
+                <span className={cn("font-bold", isDark ? "text-white" : "text-slate-800")}>{selectedTx.network}</span>
               </div>
               <div className="flex flex-col gap-1">
-                <span className="text-slate-500 font-semibold uppercase text-[9px] tracking-wider">Timestamp</span>
-                <span className="font-bold text-slate-800">
+                <span className={cn("font-semibold uppercase text-[9px] tracking-wider", isDark ? "text-white/40" : "text-slate-500")}>Timestamp</span>
+                <span className={cn("font-bold", isDark ? "text-white" : "text-slate-800")}>
                   {new Date(selectedTx.timestamp).toLocaleString()}
                 </span>
               </div>
               {selectedTx.txHash && (
                 <div className="col-span-2 flex flex-col gap-1">
-                  <span className="text-slate-500 font-semibold uppercase text-[9px] tracking-wider">Blockchain Hash</span>
+                  <span className={cn("font-semibold uppercase text-[9px] tracking-wider", isDark ? "text-white/40" : "text-slate-500")}>Blockchain Hash</span>
                   <a
                     href={getExplorerUrl(selectedTx.txHash)}
                     target="_blank"
                     rel="noreferrer"
-                    className="font-mono text-[10px] text-blue-600 hover:underline break-all"
+                    className={cn("font-mono text-[10px] break-all", isDark ? "text-blue-400 hover:underline" : "text-blue-600 hover:underline")}
                   >
                     {selectedTx.txHash}
                   </a>

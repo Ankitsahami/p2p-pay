@@ -4,6 +4,7 @@ import * as React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { ChevronDown } from 'lucide-react';
 import { cn } from '@/lib/utils';
+import { useThemeStore } from '@/stores/theme-store';
 
 export interface SelectOption {
   value: string;
@@ -33,6 +34,8 @@ export const Select = ({
   const [isOpen, setIsOpen] = React.useState(false);
   const containerRef = React.useRef<HTMLDivElement>(null);
   const labelId = React.useId();
+  const { theme } = useThemeStore();
+  const isDark = theme === 'dark';
 
   const selectedOption = options.find((opt) => opt.value === value);
 
@@ -50,7 +53,7 @@ export const Select = ({
   return (
     <div ref={containerRef} className={cn('relative w-full flex flex-col gap-1.5', className)}>
       {label && (
-        <label id={labelId} className="text-xs font-semibold text-slate-400 select-none">
+        <label id={labelId} className="text-xs font-semibold text-slate-400 dark:text-white/50 select-none">
           {label}
         </label>
       )}
@@ -62,18 +65,22 @@ export const Select = ({
           aria-labelledby={label ? labelId : undefined}
           onClick={() => setIsOpen(!isOpen)}
           className={cn(
-            'w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm text-left text-slate-950 flex items-center justify-between focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 disabled:opacity-50 disabled:pointer-events-none transition-all cursor-pointer select-none',
+            'w-full px-4 py-3 rounded-xl text-sm text-left flex items-center justify-between transition-all cursor-pointer select-none border',
+            // Light
+            'bg-slate-50 border-slate-200 text-slate-950 focus:outline-none focus:border-blue-500/50 focus:ring-1 focus:ring-blue-500/20 disabled:opacity-50 disabled:pointer-events-none',
+            // Dark
+            'dark:bg-white/5 dark:border-white/10 dark:text-white dark:focus:border-blue-500/40 dark:focus:ring-blue-500/10',
             error && 'border-red-500/50 focus:border-red-500/50 focus:ring-red-500/20'
           )}
         >
           <span className="flex items-center gap-2">
             {selectedOption?.icon && <span className="flex-shrink-0">{selectedOption.icon}</span>}
-            <span className={cn(!selectedOption && 'text-slate-400')}>
+            <span className={cn(!selectedOption && (isDark ? 'text-white/30' : 'text-slate-400'))}>
               {selectedOption ? selectedOption.label : placeholder}
             </span>
           </span>
           <ChevronDown
-            className={cn('w-4 h-4 text-slate-500 transition-transform duration-200', isOpen && 'rotate-180')}
+            className={cn('w-4 h-4 transition-transform duration-200', isDark ? 'text-white/40' : 'text-slate-500', isOpen && 'rotate-180')}
           />
         </button>
 
@@ -86,10 +93,16 @@ export const Select = ({
               animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 4, scale: 0.98 }}
               transition={{ duration: 0.15, ease: 'easeOut' }}
-              className="absolute z-30 w-full mt-2 bg-white border border-slate-200 rounded-xl shadow-2xl overflow-hidden max-h-60 overflow-y-auto scrollbar-hide py-1"
+              className={cn(
+                'absolute z-30 w-full mt-2 rounded-xl shadow-2xl overflow-hidden max-h-60 overflow-y-auto scrollbar-hide py-1 border',
+                // Light
+                'bg-white border-slate-200',
+                // Dark
+                'dark:bg-[#111] dark:border-white/10'
+              )}
             >
               {options.length === 0 ? (
-                <li className="px-4 py-3 text-xs text-slate-400 text-center select-none">
+                <li className="px-4 py-3 text-xs text-slate-400 dark:text-white/30 text-center select-none">
                   No options available
                 </li>
               ) : (
@@ -104,8 +117,15 @@ export const Select = ({
                         setIsOpen(false);
                       }}
                       className={cn(
-                        'w-full px-4 py-2.5 text-sm text-left hover:bg-slate-50 transition-colors flex items-center gap-2 cursor-pointer',
-                        opt.value === value ? 'text-blue-600 bg-blue-50 font-bold' : 'text-slate-700'
+                        'w-full px-4 py-2.5 text-sm text-left transition-colors flex items-center gap-2 cursor-pointer',
+                        // Active / inactive styles
+                        opt.value === value
+                          ? isDark
+                            ? 'text-white bg-white/10 font-bold'
+                            : 'text-blue-600 bg-blue-50 font-bold'
+                          : isDark
+                            ? 'text-white/70 hover:bg-white/5 hover:text-white'
+                            : 'text-slate-700 hover:bg-slate-50'
                       )}
                     >
                       {opt.icon && <span className="flex-shrink-0">{opt.icon}</span>}

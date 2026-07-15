@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useAuth } from '@/hooks/use-auth';
 
 /* ─── Inline Icons ─────────────────────────────────────────────────────────── */
 const ArrowUpRight = ({ className = 'h-5 w-5' }: { className?: string }) => (
@@ -108,10 +109,20 @@ function BlurText({ text, className }: { text: string; className?: string }) {
 /* ─── Main Page ─────────────────────────────────────────────────────────────── */
 export default function LandingPage() {
   const router = useRouter();
+  const { login, isAuthenticated } = useAuth();
   const [showInfo, setShowInfo] = useState(false);
 
   const scrollTo = (id: string) => {
     document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  // If already authenticated, go to dashboard; otherwise open Privy login modal
+  const handleEnterApp = () => {
+    if (isAuthenticated) {
+      router.push('/dashboard');
+    } else {
+      login();
+    }
   };
 
   const fadeUpBlur = (delay: number) => ({
@@ -143,7 +154,7 @@ export default function LandingPage() {
                 {label}
               </button>
             ))}
-            <button onClick={() => router.push('/login')}
+            <button onClick={() => handleEnterApp()}
               className="bg-white text-black font-medium text-xs px-4 py-2 rounded-full flex items-center gap-1 hover:bg-white/95 active:scale-95 transition-all cursor-pointer ml-2">
               Enter App <ArrowUpRight className="h-3.5 w-3.5 stroke-black stroke-[2.5]" />
             </button>
@@ -152,7 +163,7 @@ export default function LandingPage() {
 
         {/* Mobile CTA */}
         <div className="flex items-center justify-center pointer-events-auto md:pointer-events-none">
-          <button onClick={() => router.push('/login')}
+          <button onClick={() => handleEnterApp()}
             className="md:hidden liquid-glass h-10 px-4 rounded-full flex items-center gap-1.5 text-sm font-medium text-white cursor-pointer hover:bg-white/5 active:scale-95 transition-all">
             Enter App <ArrowUpRight className="h-3.5 w-3.5" />
           </button>
@@ -199,7 +210,7 @@ export default function LandingPage() {
 
           {/* CTA Buttons */}
           <motion.div {...fadeUpBlur(1.1)} className="mt-8 flex flex-col sm:flex-row items-center gap-4 justify-center">
-            <button onClick={() => router.push('/login')}
+            <button onClick={() => handleEnterApp()}
               className="liquid-glass-strong rounded-full px-6 py-3 flex items-center gap-2 text-sm font-medium text-white hover:scale-105 active:scale-95 transition-all duration-300 cursor-pointer shadow-lg hover:shadow-white/5">
               Pay a Bill Now
               <ArrowUpRight className="h-4 w-4 stroke-white stroke-2" />
@@ -322,7 +333,7 @@ export default function LandingPage() {
             <div className="flex gap-4">
               <span className="hover:text-white cursor-pointer transition-colors" onClick={() => scrollTo('hero')}>BACK TO TOP</span>
               <span>•</span>
-              <span className="hover:text-white cursor-pointer transition-colors" onClick={() => router.push('/login')}>ENTER APP</span>
+              <span className="hover:text-white cursor-pointer transition-colors" onClick={() => handleEnterApp()}>ENTER APP</span>
             </div>
           </div>
         </div>
@@ -350,7 +361,7 @@ export default function LandingPage() {
           <motion.div initial={{ opacity: 0, y: 10 }} whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true, amount: 0.2 }} transition={{ duration: 0.7, delay: 0.3 }}
             className="flex flex-col sm:flex-row gap-4 justify-center items-center">
-            <button onClick={() => router.push('/login')}
+            <button onClick={() => handleEnterApp()}
               className="liquid-glass-strong rounded-full px-8 py-4 text-sm font-semibold text-white flex items-center gap-2 hover:scale-105 active:scale-95 transition-all duration-300 cursor-pointer">
               Start Paying Bills
               <ArrowUpRight className="h-4 w-4" />
@@ -363,7 +374,7 @@ export default function LandingPage() {
           <div>© 2026 P2P-PAY. ALL RIGHTS RESERVED.</div>
           <div className="flex gap-6">
             <a href="mailto:ankitsahani008@gmail.com" className="hover:text-white transition-colors">CONTACT</a>
-            <span onClick={() => router.push('/login')} className="hover:text-white cursor-pointer transition-colors">ENTER APP</span>
+            <span onClick={() => handleEnterApp()} className="hover:text-white cursor-pointer transition-colors">ENTER APP</span>
           </div>
         </div>
       </section>

@@ -2,7 +2,6 @@
 
 import { create } from 'zustand';
 import { type Notification } from '@/types';
-import { MOCK_NOTIFICATIONS } from '@/lib/mock-data';
 
 interface NotificationState {
   notifications: Notification[];

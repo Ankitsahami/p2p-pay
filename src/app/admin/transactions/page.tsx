@@ -5,7 +5,6 @@ import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { Tabs } from '@/components/ui/tabs';
-import { MOCK_TRANSACTIONS } from '@/lib/mock-data';
 import { formatCurrency, truncateAddress, getRelativeTime, getExplorerUrl } from '@/lib/utils';
 import { Search, Receipt, ArrowDownLeft, ArrowUpRight, Send, Clock, Eye } from 'lucide-react';
 import { Modal } from '@/components/ui/modal';
@@ -39,8 +38,28 @@ export default function AdminTransactionsPage() {
     return 'neutral';
   };
 
+  const [transactions, setTransactions] = React.useState<any[]>([]);
+  const [isLoading, setIsLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    const fetchTxs = async () => {
+      try {
+        const res = await fetch('/api/transactions');
+        const result = await res.json();
+        if (result.success && result.data) {
+          setTransactions(result.data);
+        }
+      } catch (err) {
+        console.error('Failed to fetch transactions:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchTxs();
+  }, []);
+
   const filteredTransactions = React.useMemo(() => {
-    return MOCK_TRANSACTIONS.filter((tx) => {
+    return transactions.filter((tx) => {
       const tabMatch = activeTab === 'all' || tx.type === activeTab;
       const searchLower = search.toLowerCase();
       const searchMatch =
@@ -51,7 +70,7 @@ export default function AdminTransactionsPage() {
 
       return tabMatch && searchMatch;
     });
-  }, [activeTab, search]);
+  }, [activeTab, search, transactions]);
 
   return (
     <div className="flex flex-col gap-6 md:gap-8 select-none animate-fade-in text-slate-800">

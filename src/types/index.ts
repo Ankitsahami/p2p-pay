@@ -8,6 +8,7 @@ export interface User {
   name: string;
   avatar: string;
   walletAddress: string;
+  contractWalletAddress?: string;
   kycStatus: KYCStatus;
   role: UserRole;
   currency: SupportedCurrency;

@@ -2,7 +2,6 @@
 
 import * as React from 'react';
 import { Card } from '@/components/ui/card';
-import { MOCK_ANALYTICS_DATA, MOCK_CATEGORY_ANALYTICS } from '@/lib/mock-data';
 import { formatCurrency, formatCompactNumber } from '@/lib/utils';
 import {
   AreaChart,
@@ -20,8 +19,50 @@ import {
 } from 'recharts';
 
 export default function AdminAnalyticsPage() {
-  const chartData = MOCK_ANALYTICS_DATA;
-  const categories = MOCK_CATEGORY_ANALYTICS;
+  const [chartData, setChartData] = React.useState<any[]>([]);
+  const [categories, setCategories] = React.useState<any[]>([]);
+  const [isLoading, setIsLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    const fetchAnalytics = async () => {
+      try {
+        const res = await fetch('/api/admin/metrics');
+        const result = await res.json();
+        if (result.success && result.data) {
+          const breakdown = result.data.categoryBreakdown || [];
+          const daily = result.data.dailyData || [];
+
+          // Map growth chart data
+          const mappedChart = daily.map((d: any) => ({
+            date: d.name,
+            value: d.volume * 83.50, // convert USDC to INR
+            label: d.name,
+          }));
+
+          // Map pie chart data
+          const totalVolume = breakdown.reduce((sum: number, x: any) => sum + x.amount, 0);
+          const mappedCategories = breakdown.map((c: any) => {
+            const pct = totalVolume > 0 ? Math.round((c.amount / totalVolume) * 100) : 0;
+            const categoryName = c.category ? c.category.charAt(0).toUpperCase() + c.category.slice(1) : 'Other';
+            return {
+              category: categoryName,
+              count: c.count,
+              volume: c.amount * 83.50,
+              percentage: pct,
+            };
+          });
+
+          setChartData(mappedChart);
+          setCategories(mappedCategories);
+        }
+      } catch (err) {
+        console.error('Failed to load analytics metrics:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchAnalytics();
+  }, []);
 
   // HSL curated palette
   const COLORS = ['#3B82F6', '#8B5CF6', '#E91E8C', '#10B981', '#FF6B35', '#64748B'];

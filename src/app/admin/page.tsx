@@ -3,7 +3,6 @@
 import * as React from 'react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { MOCK_TRANSACTIONS } from '@/lib/mock-data';
 import { formatCurrency, getRelativeTime } from '@/lib/utils';
 import { Users, Wallet, ArrowLeftRight, TrendingUp } from 'lucide-react';
 
@@ -22,65 +21,36 @@ export default function AdminPage() {
   React.useEffect(() => {
     const fetchStats = async () => {
       try {
-        const url = process.env.NEXT_PUBLIC_P2P_SUBGRAPH_URL || 'https://api.studio.thegraph.com/query/1745491/event-indexer/v0.0.6';
-        if (!url) return;
-
-        const response = await fetch(url, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            query: `{
-              orders_collection(
-                limit: 200,
-                orderBy: "placedAt",
-                orderDirection: "desc"
-              ) {
-                orderId
-                status
-                userAddress
-                usdcAmount
-                fiatAmount
-                placedAt
-              }
-            }`
-          })
-        });
-
-        const resJson = await response.json();
-        const orders = resJson?.data?.orders_collection || [];
+        // Fetch database admin metrics
+        const metricsRes = await fetch('/api/admin/metrics');
+        const metricsData = await metricsRes.json();
         
-        if (orders.length > 0) {
-          const totalTransactions = orders.length;
-          // Subgraph stores fiatAmount in raw 6 decimals
-          const totalVolume = orders.reduce((sum: number, o: any) => sum + (Number(o.fiatAmount) || 0) / 1e6, 0);
-          const uniqueUsers = new Set(orders.map((o: any) => (o.userAddress || '').toLowerCase())).size;
+        // Fetch recent database transactions
+        const txsRes = await fetch('/api/transactions');
+        const txsData = await txsRes.json();
 
-          const recentTx = orders.slice(0, 6).map((o: any, idx: number) => {
-            const timestamp = o.placedAt ? new Date(Number(o.placedAt) * 1000).toISOString() : new Date().toISOString();
-            const fiatAmount = (Number(o.fiatAmount) || 0) / 1e6;
-            const userAddr = o.userAddress || '0x000000';
-            
-            return {
-              id: o.orderId || `TX-${idx}`,
-              description: `USDC escrow matched to Goofy Faucet Merchant for user ${userAddr.slice(0, 6)}...${userAddr.slice(-4)}`,
-              timestamp,
-              fiatAmount: fiatAmount > 0 ? fiatAmount : (Number(o.usdcAmount) || 0) / 1e6 * 83.50,
-              status: o.status === 3 ? 'completed' : 'pending'
-            };
-          });
+        if (metricsData.success && txsData.success) {
+          const m = metricsData.data.metrics;
+          const recentTx = (txsData.data || []).slice(0, 6).map((tx: any) => ({
+            id: tx.id,
+            description: tx.description || `${tx.type.replace('_', ' ')} for user ${tx.walletAddress.slice(0, 6)}...${tx.walletAddress.slice(-4)}`,
+            timestamp: tx.timestamp,
+            fiatAmount: tx.fiatAmount,
+            status: tx.status,
+          }));
 
           setStats({
-            totalUsers: uniqueUsers,
-            activeWallets: uniqueUsers,
-            totalTransactions,
-            totalVolume,
-            volumeToday: totalTransactions > 0 ? totalVolume / totalTransactions : 0.0,
-            successRate: 100.0,
-            recentTx
+            totalUsers: m.totalUsers,
+            activeWallets: m.totalUsers, // Map users to wallets
+            totalTransactions: m.totalTxCount,
+            totalVolume: m.totalVolume * 83.50, // Convert USDC volume to INR
+            volumeToday: m.todayVolume * 83.50,
+            successRate: m.successRate,
+            recentTx,
           });
         }
       } catch (err) {
-        console.error('Failed to query Graph Subgraph:', err);
+        console.error('Failed to query admin stats from database:', err);
       } finally {
         setIsLoading(false);
       }

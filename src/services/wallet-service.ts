@@ -62,8 +62,7 @@ export const WalletService = {
       ];
     } catch (e) {
       console.error('Error fetching balance from chain:', e);
-      // Fallback to mocks if offline
-      return MOCK_WALLET_BALANCES;
+      return [];
     }
   },
 
@@ -80,49 +79,43 @@ export const WalletService = {
     }
 
     try {
-      const key = `p2p-pay-txs-${address.toLowerCase()}`;
-      const localData = typeof window !== 'undefined' ? localStorage.getItem(key) : null;
-      const localTxs: Transaction[] = localData ? JSON.parse(localData) : [];
+      const response = await fetch(`/api/transactions?walletAddress=${address}`);
+      const result = await response.json();
+      if (!result.success) throw new Error(result.error);
 
-      // Sort by timestamp descending
-      localTxs.sort((a, b) => new Date(b.timestamp).getTime() - new Date(a.timestamp).getTime());
-
+      const dbTxs: Transaction[] = result.data || [];
       const start = (page - 1) * pageSize;
       const end = start + pageSize;
 
       return {
-        items: localTxs.slice(start, end),
-        total: localTxs.length,
-        hasMore: end < localTxs.length,
+        items: dbTxs.slice(start, end),
+        total: dbTxs.length,
+        hasMore: end < dbTxs.length,
       };
     } catch (e) {
-      console.error('Error fetching transactions from localStorage:', e);
+      console.error('Error fetching transactions from API:', e);
       return { items: [], total: 0, hasMore: false };
     }
   },
 
   /**
-   * Record a new transaction in localStorage
+   * Record a new transaction in database
    */
-  saveTransaction(address: string, tx: Omit<Transaction, 'walletAddress'>): void {
+  async saveTransaction(address: string, tx: Omit<Transaction, 'walletAddress'>): Promise<void> {
     if (!address) return;
     try {
-      const key = `p2p-pay-txs-${address.toLowerCase()}`;
-      const localData = typeof window !== 'undefined' ? localStorage.getItem(key) : null;
-      const localTxs: Transaction[] = localData ? JSON.parse(localData) : [];
-
-      const newTx: Transaction = {
-        ...tx,
-        walletAddress: address,
-      };
-
-      localTxs.push(newTx);
-      
-      if (typeof window !== 'undefined') {
-        localStorage.setItem(key, JSON.stringify(localTxs));
-      }
+      await fetch('/api/transactions', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          ...tx,
+          walletAddress: address,
+        }),
+      });
     } catch (e) {
-      console.error('Error saving transaction to localStorage:', e);
+      console.error('Error saving transaction to API:', e);
     }
   },
 
@@ -164,8 +157,8 @@ export const WalletService = {
         // Wait for receipt
         await publicClient.waitForTransactionReceipt({ hash: txHash });
 
-        // Save transaction to local storage
-        WalletService.saveTransaction(walletAddress, {
+        // Save transaction to database API
+        await WalletService.saveTransaction(walletAddress, {
           id: txHash,
           type: 'send',
           description: `Sent ${amount} ${token.symbol} to ${to.slice(0, 6)}...${to.slice(-4)}`,
@@ -187,26 +180,8 @@ export const WalletService = {
       }
     }
 
-    // Fallback Mock Mode
-    await delay(2000);
-    const mockHash = '0x' + Array.from({ length: 64 }, () => Math.floor(Math.random() * 16).toString(16)).join('');
-    
-    WalletService.saveTransaction(walletAddress, {
-      id: mockHash,
-      type: 'send',
-      description: `Sent ${amount} ${token.symbol} to ${to.slice(0, 6)}...${to.slice(-4)}`,
-      fiatAmount: numAmount * WalletService.getTokenPrice(token.symbol, 'INR'),
-      fiatCurrency: 'INR',
-      cryptoAmount: amount,
-      token: token.symbol,
-      network: 'Base Sepolia',
-      status: 'completed',
-      txHash: mockHash,
-      toAddress: to,
-      timestamp: new Date().toISOString(),
-    });
-
-    return { txHash: mockHash };
+    // Fallback if client is missing
+    throw new Error('Wallet client is required to perform transfers');
   },
 
   /**

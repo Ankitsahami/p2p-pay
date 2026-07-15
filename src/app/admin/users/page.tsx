@@ -4,14 +4,43 @@ import * as React from 'react';
 import { Card } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { MOCK_ADMIN_USERS } from '@/lib/mock-data';
 import { formatCurrency, truncateAddress } from '@/lib/utils';
 import { Search, ShieldAlert, CheckCircle, Ban } from 'lucide-react';
 import toast from 'react-hot-toast';
 
 export default function AdminUsersPage() {
   const [search, setSearch] = React.useState('');
-  const [users, setUsers] = React.useState(MOCK_ADMIN_USERS);
+  const [users, setUsers] = React.useState<any[]>([]);
+  const [isLoading, setIsLoading] = React.useState(true);
+
+  React.useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const res = await fetch('/api/users');
+        const result = await res.json();
+        if (result.success && result.data) {
+          const mappedUsers = result.data.map((u: any) => ({
+            id: u.id,
+            email: u.email || 'no-email@p2p.me',
+            name: u.email && u.email.includes('@') ? u.email.split('@')[0] : `User ${u.walletAddress.slice(0, 6)}`,
+            walletAddress: u.walletAddress,
+            kycStatus: 'verified',
+            currency: 'INR',
+            transactionCount: 0,
+            totalVolume: 0.0,
+            status: 'active',
+            createdAt: u.createdAt,
+          }));
+          setUsers(mappedUsers);
+        }
+      } catch (err) {
+        console.error('Failed to fetch users:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchUsers();
+  }, []);
 
   const filteredUsers = React.useMemo(() => {
     if (!search.trim()) return users;

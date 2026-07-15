@@ -2,14 +2,15 @@
 
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Send, AlertTriangle, Loader2 } from 'lucide-react';
+import { ArrowLeft, Send, AlertTriangle } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Select } from '@/components/ui/select';
 import { useWallet } from '@/hooks/use-wallet';
-import { useAuth, usePrivy } from '@/hooks/use-auth';
+import { useAuth } from '@/hooks/use-auth';
+import { useThemeStore } from '@/stores/theme-store';
 import { useWallets } from '@privy-io/react-auth';
 import { useSmartWallets } from '@privy-io/react-auth/smart-wallets';
 import { WalletService } from '@/services/wallet-service';
@@ -17,11 +18,14 @@ import { TOKENS } from '@/lib/constants';
 import { formatCrypto, formatCurrency } from '@/lib/utils';
 import { createWalletClient, custom } from 'viem';
 import { baseSepolia } from 'viem/chains';
+import { cn } from '@/lib/utils';
 
 export default function SendPage() {
   const router = useRouter();
   const { walletAddress } = useAuth();
   const { getBalance, deductBalance, activeCurrency, formatFiatValue } = useWallet();
+  const { theme } = useThemeStore();
+  const isDark = theme === 'dark';
   const { wallets } = useWallets();
   const { client: smartWalletClient } = useSmartWallets();
 
@@ -117,26 +121,31 @@ export default function SendPage() {
   }, [amount, tokenSymbol, formatFiatValue]);
 
   return (
-    <div className="max-w-md mx-auto flex flex-col gap-6 select-none animate-fade-in">
+    <div className={cn("max-w-md mx-auto flex flex-col gap-6 select-none animate-fade-in transition-colors duration-300", isDark ? "text-white" : "text-slate-800")}>
       {/* Back Header Nav */}
       <div className="flex items-center gap-3">
         <button
           onClick={() => router.push('/dashboard/wallet')}
-          className="p-2 rounded-xl border border-white/5 bg-white/5 hover:bg-white/10 active:scale-95 text-slate-400 hover:text-white transition-all cursor-pointer"
+          className={cn(
+            "p-2 rounded-xl border flex items-center justify-center active:scale-95 transition-all cursor-pointer",
+            isDark
+              ? "border-white/10 bg-white/5 hover:bg-white/10 text-white/70 hover:text-white"
+              : "border-slate-200 bg-white hover:bg-slate-50 text-slate-500 hover:text-slate-700"
+          )}
         >
           <ArrowLeft className="w-4 h-4" />
         </button>
-        <h2 className="text-sm font-bold text-white">Send / Withdraw</h2>
+        <h2 className={cn("text-sm font-bold", isDark ? "text-white" : "text-slate-800")}>Send / Withdraw</h2>
       </div>
 
       {/* Main card form */}
-      <Card className="p-6 md:p-8 flex flex-col gap-5 bg-white/[0.02]">
-        <div className="flex flex-col gap-1 items-center text-center pb-3 border-b border-white/5">
+      <Card className="p-6 md:p-8 flex flex-col gap-5">
+        <div className={cn("flex flex-col gap-1 items-center text-center pb-3 border-b", isDark ? "border-white/5" : "border-slate-100")}>
           <div className="w-11 h-11 rounded-xl bg-violet-500/10 border border-violet-500/20 flex items-center justify-center text-violet-400 mb-2">
             <Send className="w-5 h-5" />
           </div>
-          <h3 className="text-sm font-bold text-white">Transfer Crypto Assets</h3>
-          <p className="text-[10px] text-slate-400 mt-1 select-none">Send funds instantly over the Base network</p>
+          <h3 className={cn("text-sm font-bold", isDark ? "text-white" : "text-slate-800")}>Transfer Crypto Assets</h3>
+          <p className={cn("text-[10px] mt-1 select-none", isDark ? "text-white/40" : "text-slate-400")}>Send funds instantly over the Base network</p>
         </div>
 
         <form onSubmit={handleSend} className="flex flex-col gap-4">
@@ -175,7 +184,7 @@ export default function SendPage() {
           </div>
 
           {/* Current balance indicator */}
-          <div className="flex items-center justify-between text-[10px] text-slate-500 font-semibold px-1 select-none">
+          <div className={cn("flex items-center justify-between text-[10px] font-semibold px-1 select-none", isDark ? "text-white/40" : "text-slate-500")}>
             <span>Available Balance</span>
             <span>
               {formatCrypto(activeBalance, 4)} {tokenSymbol}
@@ -184,16 +193,24 @@ export default function SendPage() {
 
           {/* Dues conversion rates details */}
           {parseFloat(amount) > 0 && (
-            <div className="p-3 bg-white/5 border border-white/5 rounded-xl text-xs flex justify-between items-center animate-fade-in select-none">
-              <span className="text-slate-400">Fiat Value Equivalent</span>
-              <span className="font-bold text-white">{formatCurrency(equivalentFiat, activeCurrency)}</span>
+            <div className={cn(
+              "p-3 border rounded-xl text-xs flex justify-between items-center animate-fade-in select-none",
+              isDark ? "bg-white/5 border-white/5" : "bg-slate-50 border-slate-100"
+            )}>
+              <span className={cn(isDark ? "text-white/40" : "text-slate-400")}>Fiat Value Equivalent</span>
+              <span className={cn("font-bold", isDark ? "text-white" : "text-slate-800")}>{formatCurrency(equivalentFiat, activeCurrency)}</span>
             </div>
           )}
 
           {/* Network alert warning banner */}
-          <div className="bg-amber-500/5 border border-amber-500/10 p-3 rounded-xl flex items-start gap-2.5 select-none">
+          <div className={cn(
+            "p-3 rounded-xl flex items-start gap-2.5 select-none border",
+            isDark
+              ? "bg-amber-500/5 border-amber-500/10 text-white"
+              : "bg-amber-50 border border-amber-100 text-slate-800"
+          )}>
             <AlertTriangle className="w-4 h-4 text-amber-500 flex-shrink-0 mt-0.5" />
-            <span className="text-[10px] text-slate-400 leading-normal">
+            <span className={cn("text-[10px] leading-normal", isDark ? "text-white/40" : "text-slate-400")}>
               Please double check the destination address. Transactions sent to incorrect addresses or networks cannot be reversed.
             </span>
           </div>

@@ -11,12 +11,16 @@ import { Button } from '@/components/ui/button';
 import { useWallet } from '@/hooks/use-wallet';
 import { useAuth } from '@/hooks/use-auth';
 import { WalletService } from '@/services/wallet-service';
+import { useThemeStore } from '@/stores/theme-store';
 import { formatCurrency, getRelativeTime, formatCrypto, truncateAddress, getExplorerUrl } from '@/lib/utils';
 import { type Transaction } from '@/types';
+import { cn } from '@/lib/utils';
 
 export default function HistoryPage() {
   const { activeCurrency } = useWallet();
   const { walletAddress } = useAuth();
+  const { theme } = useThemeStore();
+  const isDark = theme === 'dark';
   const [transactions, setTransactions] = React.useState<Transaction[]>([]);
   const [search, setSearch] = React.useState('');
   const [activeTab, setActiveTab] = React.useState('all');
@@ -79,7 +83,7 @@ export default function HistoryPage() {
   }, [transactions, activeTab, search]);
 
   return (
-    <div className="flex flex-col gap-6 md:gap-8 select-none text-slate-800">
+    <div className={cn("flex flex-col gap-6 md:gap-8 select-none transition-colors duration-300", isDark ? "text-white" : "text-slate-800")}>
       {/* Search and Filters row */}
       <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4">
         <div className="max-w-md w-full">
@@ -87,18 +91,18 @@ export default function HistoryPage() {
             placeholder="Search by ID, merchant or description..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            icon={<Search className="w-4 h-4 text-slate-500" />}
+            icon={<Search className="w-4 h-4 text-slate-400 dark:text-white/40" />}
           />
         </div>
         <Tabs tabs={tabs} activeTab={activeTab} onChange={setActiveTab} />
       </div>
 
       {/* Main Ledger List */}
-      <Card className="p-5 bg-white border border-slate-100 shadow-sm" padding="none">
-        <div className="divide-y divide-slate-100">
+      <Card className="p-0 overflow-hidden" padding="none">
+        <div className={cn("divide-y", isDark ? "divide-white/5" : "divide-slate-100")}>
           {filteredTransactions.length === 0 ? (
-            <div className="px-5 py-12 text-center text-xs text-slate-500 flex flex-col items-center justify-center gap-3">
-               <Clock className="w-8 h-8 text-slate-400" />
+            <div className={cn("px-5 py-12 text-center text-xs flex flex-col items-center justify-center gap-3", isDark ? "text-white/40" : "text-slate-505")}>
+               <Clock className={cn("w-8 h-8", isDark ? "text-white/20" : "text-slate-400")} />
               <span>No transactions matching criteria.</span>
             </div>
           ) : (
@@ -106,22 +110,28 @@ export default function HistoryPage() {
               <button
                 key={tx.id}
                 onClick={() => setSelectedTx(tx)}
-                className="w-full px-5 py-4 flex items-center justify-between hover:bg-slate-50 transition-colors text-left cursor-pointer"
+                className={cn(
+                  "w-full px-5 py-4 flex items-center justify-between transition-colors text-left cursor-pointer",
+                  isDark ? "hover:bg-white/5" : "hover:bg-slate-50"
+                )}
               >
                 <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center">
+                  <div className={cn(
+                    "w-10 h-10 rounded-xl border flex items-center justify-center",
+                    isDark ? "bg-white/5 border-white/10" : "bg-slate-50 border-slate-100"
+                  )}>
                     {getIcon(tx.type)}
                   </div>
                   <div className="flex flex-col gap-0.5">
-                    <span className="text-xs font-bold text-slate-800 max-w-[150px] sm:max-w-[280px] truncate">
+                    <span className={cn("text-xs font-bold max-w-[150px] sm:max-w-[280px] truncate", isDark ? "text-white" : "text-slate-800")}>
                       {tx.merchant || tx.description}
                     </span>
-                    <span className="text-[10px] text-slate-500 font-semibold">{getRelativeTime(tx.timestamp)}</span>
+                    <span className={cn("text-[10px] font-semibold", isDark ? "text-white/40" : "text-slate-500")}>{getRelativeTime(tx.timestamp)}</span>
                   </div>
                 </div>
 
                 <div className="flex flex-col items-end gap-1.5">
-                  <span className="text-xs font-bold text-slate-800">
+                  <span className={cn("text-xs font-bold", isDark ? "text-white" : "text-slate-800")}>
                     {tx.type === 'deposit' ? '+' : '-'}
                     {formatCurrency(tx.fiatAmount, activeCurrency)}
                   </span>
@@ -157,16 +167,19 @@ export default function HistoryPage() {
           })();
 
           return (
-            <div className="flex flex-col gap-6 select-none text-slate-800 animate-fade-in">
-            <div className="flex flex-col items-center text-center pb-4 border-b border-slate-100">
-              <div className="w-12 h-12 rounded-2xl bg-slate-50 border border-slate-100 flex items-center justify-center mb-3">
+            <div className={cn("flex flex-col gap-6 select-none animate-fade-in", isDark ? "text-white/90" : "text-slate-800")}>
+            <div className={cn("flex flex-col items-center text-center pb-4 border-b", isDark ? "border-white/5" : "border-slate-100")}>
+              <div className={cn(
+                "w-12 h-12 rounded-2xl border flex items-center justify-center mb-3",
+                isDark ? "bg-white/5 border-white/10" : "bg-slate-50 border-slate-100"
+              )}>
                 {getIcon(selectedTx.type)}
               </div>
-              <h4 className="text-lg font-extrabold text-slate-800">
+              <h4 className={cn("text-lg font-extrabold", isDark ? "text-white" : "text-slate-800")}>
                 {selectedTx.type === 'deposit' ? '+' : '-'}
                 {formatCurrency(selectedTx.fiatAmount, activeCurrency)}
               </h4>
-              <p className="text-xs text-slate-500 mt-1">{selectedTx.description}</p>
+              <p className={cn("text-xs mt-1", isDark ? "text-white/50" : "text-slate-500")}>{selectedTx.description}</p>
               <Badge variant={getStatusVariant(selectedTx.status)} size="md" className="mt-3 capitalize">
                 {selectedTx.status}
               </Badge>
@@ -174,65 +187,65 @@ export default function HistoryPage() {
 
             <div className="grid grid-cols-2 gap-y-4 gap-x-2 text-xs">
               <div className="flex flex-col gap-1">
-                <span className="text-slate-500 font-semibold uppercase text-[9px] tracking-wider">Order ID</span>
-                <span className="font-bold text-slate-800">{selectedTx.id}</span>
+                <span className={cn("font-semibold uppercase text-[9px] tracking-wider", isDark ? "text-white/40" : "text-slate-500")}>Order ID</span>
+                <span className={cn("font-bold", isDark ? "text-white" : "text-slate-800")}>{selectedTx.id}</span>
               </div>
               <div className="flex flex-col gap-1">
-                <span className="text-slate-500 font-semibold uppercase text-[9px] tracking-wider">Type</span>
-                <span className="font-bold text-slate-800 uppercase">{selectedTx.type === 'bill_payment' ? 'Sell' : selectedTx.type}</span>
+                <span className={cn("font-semibold uppercase text-[9px] tracking-wider", isDark ? "text-white/40" : "text-slate-500")}>Type</span>
+                <span className={cn("font-bold uppercase", isDark ? "text-white" : "text-slate-800")}>{selectedTx.type === 'bill_payment' ? 'Sell' : selectedTx.type}</span>
               </div>
               <div className="flex flex-col gap-1">
-                <span className="text-slate-500 font-semibold uppercase text-[9px] tracking-wider">Amount</span>
-                <span className="font-bold text-slate-800">
+                <span className={cn("font-semibold uppercase text-[9px] tracking-wider", isDark ? "text-white/40" : "text-slate-500")}>Amount</span>
+                <span className={cn("font-bold", isDark ? "text-white" : "text-slate-800")}>
                   {formatCrypto(selectedTx.cryptoAmount, 4)} {selectedTx.token}
                 </span>
               </div>
               <div className="flex flex-col gap-1">
-                <span className="text-slate-500 font-semibold uppercase text-[9px] tracking-wider">Fee</span>
-                <span className="font-bold text-slate-800">
+                <span className={cn("font-semibold uppercase text-[9px] tracking-wider", isDark ? "text-white/40" : "text-slate-500")}>Fee</span>
+                <span className={cn("font-bold", isDark ? "text-white" : "text-slate-800")}>
                   {selectedTx.type === 'bill_payment' ? '0.050000 USDC' : '0.00 USDC'}
                 </span>
               </div>
               <div className="flex flex-col gap-1">
-                <span className="text-slate-500 font-semibold uppercase text-[9px] tracking-wider">Utility Provider Received</span>
-                <span className="font-bold text-emerald-600">
+                <span className={cn("font-semibold uppercase text-[9px] tracking-wider", isDark ? "text-white/40" : "text-slate-500")}>Utility Provider Received</span>
+                <span className="font-bold text-emerald-600 dark:text-emerald-400">
                   {formatCurrency(selectedTx.fiatAmount, activeCurrency)}
                 </span>
               </div>
               <div className="flex flex-col gap-1">
-                <span className="text-slate-500 font-semibold uppercase text-[9px] tracking-wider">Paid By</span>
-                <span className="font-mono text-slate-800 font-bold">
+                <span className={cn("font-semibold uppercase text-[9px] tracking-wider", isDark ? "text-white/40" : "text-slate-500")}>Paid By</span>
+                <span className={cn("font-mono font-bold", isDark ? "text-white/80" : "text-slate-800")}>
                   {selectedTx.walletAddress ? `${selectedTx.walletAddress.slice(0, 6)}...${selectedTx.walletAddress.slice(-4)}` : 'Smart Account'}
                 </span>
               </div>
               <div className="flex flex-col gap-1">
-                <span className="text-slate-500 font-semibold uppercase text-[9px] tracking-wider">Paid To (Merchant)</span>
-                <span className="font-bold text-slate-800">
+                <span className={cn("font-semibold uppercase text-[9px] tracking-wider", isDark ? "text-white/40" : "text-slate-500")}>Paid To (Merchant)</span>
+                <span className={cn("font-bold", isDark ? "text-white" : "text-slate-800")}>
                   {selectedTx.type === 'bill_payment' ? 'Goofy Faucet Merchant' : 'N/A'}
                 </span>
               </div>
               <div className="flex flex-col gap-1">
-                <span className="text-slate-500 font-semibold uppercase text-[9px] tracking-wider">Completed In</span>
-                <span className="font-bold text-slate-800">
+                <span className={cn("font-semibold uppercase text-[9px] tracking-wider", isDark ? "text-white/40" : "text-slate-500")}>Completed In</span>
+                <span className={cn("font-bold", isDark ? "text-white" : "text-slate-800")}>
                   {selectedTx.type === 'bill_payment' ? '12s' : 'N/A'}
                 </span>
               </div>
               <div className="flex flex-col gap-1 col-span-2">
-                <span className="text-slate-500 font-semibold uppercase text-[9px] tracking-wider">Completed At</span>
-                <span className="font-bold text-slate-800">{formattedCompletedAt}</span>
+                <span className={cn("font-semibold uppercase text-[9px] tracking-wider", isDark ? "text-white/40" : "text-slate-500")}>Completed At</span>
+                <span className={cn("font-bold", isDark ? "text-white" : "text-slate-800")}>{formattedCompletedAt}</span>
               </div>
               <div className="flex flex-col gap-1">
-                <span className="text-slate-500 font-semibold uppercase text-[9px] tracking-wider">Network</span>
-                <span className="font-bold text-slate-800">{selectedTx.network}</span>
+                <span className={cn("font-semibold uppercase text-[9px] tracking-wider", isDark ? "text-white/40" : "text-slate-500")}>Network</span>
+                <span className={cn("font-bold", isDark ? "text-white" : "text-slate-800")}>{selectedTx.network}</span>
               </div>
               {selectedTx.txHash && (
                 <div className="col-span-2 flex flex-col gap-1 pt-1">
-                  <span className="text-slate-500 font-semibold uppercase text-[9px] tracking-wider">Blockchain Hash</span>
+                  <span className={cn("font-semibold uppercase text-[9px] tracking-wider", isDark ? "text-white/40" : "text-slate-500")}>Blockchain Hash</span>
                   <a
                     href={getExplorerUrl(selectedTx.txHash)}
                     target="_blank"
                     rel="noreferrer"
-                    className="font-mono text-[10px] text-blue-600 hover:underline break-all"
+                    className={cn("font-mono text-[10px] break-all", isDark ? "text-blue-400 hover:underline" : "text-blue-600 hover:underline")}
                   >
                     {selectedTx.txHash}
                   </a>

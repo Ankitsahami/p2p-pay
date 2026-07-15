@@ -3,19 +3,22 @@
 import * as React from 'react';
 import { useRouter } from 'next/navigation';
 import { QRCodeSVG } from 'qrcode.react';
-import { Copy, Check, ArrowDownLeft, ArrowUpRight, Shield, ExternalLink } from 'lucide-react';
+import { Copy, Check, ArrowDownLeft, ArrowUpRight, Shield } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { useWallet } from '@/hooks/use-wallet';
 import { useAuth } from '@/hooks/use-auth';
-import { formatCurrency, formatCrypto, truncateAddress, copyToClipboard, getExplorerUrl } from '@/lib/utils';
-import { TOKENS } from '@/lib/constants';
+import { useThemeStore } from '@/stores/theme-store';
+import { formatCurrency, formatCrypto, truncateAddress, copyToClipboard } from '@/lib/utils';
+import { cn } from '@/lib/utils';
 
 export default function WalletPage() {
   const router = useRouter();
   const { walletAddress } = useAuth();
   const { balances, totalFiatValue, activeCurrency } = useWallet();
+  const { theme } = useThemeStore();
+  const isDark = theme === 'dark';
   const [copied, setCopied] = React.useState(false);
 
   const handleCopy = async () => {
@@ -37,13 +40,13 @@ export default function WalletPage() {
   };
 
   return (
-    <div className="flex flex-col gap-6 md:gap-8 select-none">
+    <div className={cn("flex flex-col gap-6 md:gap-8 select-none transition-colors duration-300", isDark ? "text-white" : "text-slate-800")}>
       {/* Upper Cards */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 items-stretch">
-        {/* Balance Card */}
-        <Card className="md:col-span-2 p-6 flex flex-col justify-between bg-gradient-to-br from-[#0d0d0d] to-[#181818] relative overflow-hidden">
+        {/* Balance Card - Dark styled like a physical credit card */}
+        <Card className="md:col-span-2 p-6 flex flex-col justify-between bg-gradient-to-br from-[#0d0d0d] to-[#181818] border-none shadow-2xl relative overflow-hidden">
           <div className="flex flex-col gap-1.5 z-10">
-            <span className="text-[10px] font-bold text-slate-500 uppercase tracking-wider">Estimated Balance</span>
+            <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Estimated Balance</span>
             <h2 className="text-3xl font-extrabold text-white">
               {formatCurrency(totalFiatValue, activeCurrency)}
             </h2>
@@ -71,15 +74,15 @@ export default function WalletPage() {
         </Card>
 
         {/* Receive QR Card */}
-        <Card className="p-5 flex flex-col items-center justify-center gap-4 bg-white/[0.02]">
-          <div className="p-3 bg-white rounded-2xl">
+        <Card className="p-5 flex flex-col items-center justify-center gap-4">
+          <div className="p-3 bg-white border border-slate-100 dark:border-white/5 rounded-2xl">
             {walletAddress ? (
               <QRCodeSVG value={walletAddress} size={110} />
             ) : (
-              <div className="w-28 h-28 bg-slate-800 animate-pulse rounded-lg" />
+              <div className="w-28 h-28 bg-slate-800 dark:bg-white/5 animate-pulse rounded-lg" />
             )}
           </div>
-          <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest text-center select-none leading-relaxed">
+          <span className={cn("text-[10px] font-bold uppercase tracking-widest text-center select-none leading-relaxed", isDark ? "text-white/40" : "text-slate-500")}>
             Scan to Deposit USDC
           </span>
         </Card>
@@ -107,7 +110,7 @@ export default function WalletPage() {
 
       {/* Assets List */}
       <div className="flex flex-col gap-4">
-        <span className="text-[10px] font-bold tracking-widest text-slate-500 uppercase">
+        <span className={cn("text-[10px] font-bold tracking-widest uppercase", isDark ? "text-white/40" : "text-slate-500")}>
           Supported Assets
         </span>
 
@@ -117,23 +120,26 @@ export default function WalletPage() {
             return (
               <Card
                 key={bal.token.symbol}
-                className="p-5 flex items-center justify-between hover:bg-white/[0.04] transition-all bg-white/[0.02]"
+                className="p-5 flex items-center justify-between hover:scale-[1.01] duration-200 transition-all"
               >
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-xl bg-white/5 border border-white/5 flex items-center justify-center font-bold text-xs" style={{ color: tokenColor }}>
+                  <div className={cn(
+                    "w-9 h-9 rounded-xl border flex items-center justify-center font-bold text-xs",
+                    isDark ? "bg-white/5 border-white/5" : "bg-slate-50 border-slate-200/50"
+                  )} style={{ color: tokenColor }}>
                     {bal.token.symbol.slice(0, 2)}
                   </div>
                   <div className="flex flex-col gap-0.5">
-                    <span className="text-xs font-bold text-white">{bal.token.name}</span>
-                    <span className="text-[10px] text-slate-500 font-semibold">{bal.token.symbol} on Base</span>
+                    <span className={cn("text-xs font-bold", isDark ? "text-white" : "text-slate-800")}>{bal.token.name}</span>
+                    <span className={cn("text-[10px] font-semibold", isDark ? "text-white/40" : "text-slate-500")}>{bal.token.symbol} on Base</span>
                   </div>
                 </div>
 
                 <div className="flex flex-col items-end gap-0.5">
-                  <span className="text-xs font-bold text-white">
+                  <span className={cn("text-xs font-bold", isDark ? "text-white" : "text-slate-800")}>
                     {formatCrypto(bal.balance, 4)} {bal.token.symbol}
                   </span>
-                  <span className="text-[10px] text-slate-500 font-semibold">
+                  <span className={cn("text-[10px] font-semibold", isDark ? "text-white/40" : "text-slate-500")}>
                     {formatCurrency(bal.fiatValue, activeCurrency)}
                   </span>
                 </div>

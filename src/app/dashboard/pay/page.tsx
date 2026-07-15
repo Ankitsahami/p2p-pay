@@ -7,9 +7,13 @@ import { Search, Zap, Droplets, Flame, Smartphone, Tv, Wifi, Car, CreditCard, Sh
 import { Card } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { BILL_CATEGORIES } from '@/lib/bill-categories';
+import { useThemeStore } from '@/stores/theme-store';
+import { cn } from '@/lib/utils';
 
 export default function PayPage() {
   const [search, setSearch] = React.useState('');
+  const { theme } = useThemeStore();
+  const isDark = theme === 'dark';
 
   const filteredCategories = React.useMemo(() => {
     if (!search.trim()) return BILL_CATEGORIES;
@@ -61,19 +65,19 @@ export default function PayPage() {
           placeholder="Search utility, recharge, or provider name..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          icon={<Search className="w-4 h-4 text-slate-500" />}
-          className="bg-white border-slate-200 text-slate-850"
+          icon={<Search className="w-4 h-4 text-slate-400 dark:text-white/40" />}
+          className=""
         />
       </div>
 
       {/* Grid of Categories */}
       {filteredCategories.length === 0 ? (
-        <div className="text-center py-12 text-slate-500 text-xs font-semibold">
+        <div className={cn("text-center py-12 text-xs font-semibold", isDark ? "text-white/40" : "text-slate-500")}>
           No matching bill categories found.
         </div>
       ) : (
         <div className="flex flex-col gap-6">
-          <span className="text-[10px] font-bold tracking-widest text-slate-500 uppercase">
+          <span className={cn("text-[10px] font-bold tracking-widest uppercase", isDark ? "text-white/40" : "text-slate-500")}>
             All Bill Categories
           </span>
 
@@ -86,13 +90,16 @@ export default function PayPage() {
             {filteredCategories.map((cat) => (
               <motion.div key={cat.id} variants={itemVariants} className="h-full">
                 <Link href={`/dashboard/pay/${cat.id}`} className="block h-full">
-                  <Card className="p-5 flex items-start gap-4 hover:border-slate-300 hover:shadow-sm active:scale-98 transition-all h-full bg-white border border-slate-100">
-                    <div className="w-10 h-10 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-center flex-shrink-0">
+                  <Card className="p-5 flex items-start gap-4 active:scale-98 transition-all h-full">
+                    <div className={cn(
+                      "w-10 h-10 rounded-xl flex items-center justify-center flex-shrink-0 border",
+                      isDark ? "bg-white/5 border-white/10" : "bg-slate-50 border-slate-100"
+                    )}>
                       {getIcon(cat.icon, cat.color)}
                     </div>
                     <div className="flex flex-col gap-1 overflow-hidden">
-                      <h4 className="text-xs font-bold text-slate-800 truncate">{cat.name}</h4>
-                      <p className="text-[10px] text-slate-500 leading-relaxed text-ellipsis-2">
+                      <h4 className={cn("text-xs font-bold truncate", isDark ? "text-white" : "text-slate-800")}>{cat.name}</h4>
+                      <p className={cn("text-[10px] leading-relaxed text-ellipsis-2", isDark ? "text-white/50" : "text-slate-500")}>
                         {cat.description}
                       </p>
                     </div>

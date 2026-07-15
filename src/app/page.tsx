@@ -346,6 +346,152 @@ export default function LandingPage() {
         </div>
       </section>
 
+      {/* ── SECTION: TECHNICAL DOCUMENTATION ── */}
+      <section id="docs" className="relative w-full bg-black text-white px-8 py-24 select-none border-t border-white/5">
+        <div className="max-w-5xl mx-auto flex flex-col gap-12">
+          {/* Header */}
+          <div className="flex flex-col gap-3">
+            <span className="text-xs font-bold tracking-widest text-white/50 uppercase">// Project Documentation</span>
+            <h2 className="font-bold italic text-5xl tracking-[-2px] text-white">Technical Architecture &amp; Spec</h2>
+            <p className="text-white/60 font-light text-sm max-w-2xl leading-relaxed">
+              A comprehensive technical overview of P2P-Pay: from the problem statement to our integration of account abstraction and the P2P.me Payment Integrators SDK.
+            </p>
+          </div>
+
+          {/* Section 1: Introduction */}
+          <div className="flex flex-col gap-4">
+            <h3 className="text-lg font-bold tracking-wide text-white/80 uppercase">1. Introduction</h3>
+            <p className="text-xs text-white/70 leading-relaxed font-light">
+              <strong>P2P-Pay</strong> is a decentralized payment gateway built on the Base network. It enables users to pay standard utility bills—such as electricity, water, broadband, or mobile recharges—using digital assets (USDC) from an embedded smart contract wallet. 
+            </p>
+            <p className="text-xs text-white/70 leading-relaxed font-light">
+              By abstracting blockchain mechanics (gas fees, transaction signing, network bridges) and combining them with cryptographic peer-to-peer (P2P) on-chain escrows, P2P-Pay allows stablecoins to settle real-world liabilities instantly.
+            </p>
+          </div>
+
+          {/* Section 2: Problem & Solution */}
+          <div className="flex flex-col gap-4">
+            <h3 className="text-lg font-bold tracking-wide text-white/80 uppercase">2. Problem &amp; Solution</h3>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mt-2">
+              <div className="flex flex-col gap-2">
+                <h4 className="text-xs font-bold text-red-400 uppercase tracking-widest">// The Off-Ramping Friction</h4>
+                <p className="text-xs text-white/65 leading-relaxed font-light">
+                  Traditional web3 payment methods require users to off-ramp assets to spend them. This process is plagued by exchange fees, long bank processing times (24-48 hours), privacy violations via KYC verification, and unfavorable currency conversion spreads.
+                </p>
+              </div>
+              <div className="flex flex-col gap-2">
+                <h4 className="text-xs font-bold text-emerald-400 uppercase tracking-widest">// Direct Peer-to-Peer Settlement</h4>
+                <p className="text-xs text-white/65 leading-relaxed font-light">
+                  P2P-Pay eliminates intermediate financial entities. The user locks USDC in a secure on-chain contract. A matched merchant processes the bill payment in local fiat currency (₹INR) via instant banking rails (UPI). Once verified, the locked USDC is released to the merchant trustlessly.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Section 3: SDK Integration */}
+          <div className="flex flex-col gap-4">
+            <h3 className="text-lg font-bold tracking-wide text-white/80 uppercase">3. Why &amp; How we use the P2P.me SDK</h3>
+            <p className="text-xs text-white/70 leading-relaxed font-light">
+              We leverage the <strong>@p2pdotme/sdk</strong> (p2p.kit) to handle order placement, peer matching, cryptographic signature validation, and contract updates.
+            </p>
+            <div className="flex flex-col gap-2.5 mt-2">
+              <h4 className="text-xs font-bold text-blue-400 uppercase tracking-widest">// Core SDK Operations</h4>
+              <ul className="text-xs text-white/65 list-disc list-inside flex flex-col gap-1.5 font-light leading-relaxed">
+                <li><strong>Safe Locks:</strong> Escrow contract locks the buyer&apos;s digital assets securely.</li>
+                <li><strong>Zero-Collusion Signatures:</strong> Formulates and stores hashes of merchant payment details on-chain to prevent spoofing or frontrunning.</li>
+                <li><strong>Automated Execution:</strong> Decodes and triggers the contract method <code>setSellOrderUpi</code> once the merchant settles off-chain.</li>
+              </ul>
+            </div>
+
+            {/* Code Snippet - Capsule formatted, no box container */}
+            <div className="mt-4 py-4 px-2 overflow-x-auto text-[10px] font-mono text-white/70 leading-relaxed">
+              <span className="text-white/40">// Initialize SDK &amp; confirm contract escrow lock</span><br/>
+              <span className="text-blue-400">const</span> orders = <span className="text-blue-400">createOrders</span>(&#123; publicClient, diamondAddress, usdcAddress &#125;);<br/>
+              <span className="text-blue-400">const</span> lockResult = <span className="text-blue-400">await</span> orders.setSellOrderUpi.<span className="text-blue-400">execute</span>(&#123;<br/>
+              &nbsp;&nbsp;walletClient: smartWalletClient,<br/>
+              &nbsp;&nbsp;orderId: BigInt(activeOrderId),<br/>
+              &nbsp;&nbsp;paymentAddress: <span className="text-emerald-400">&apos;merchant@upi&apos;</span>,<br/>
+              &nbsp;&nbsp;merchantPublicKey: pubkey,<br/>
+              &nbsp;&nbsp;updatedAmount: amount,<br/>
+              &nbsp;&nbsp;waitForReceipt: <span className="text-blue-400">true</span><br/>
+              &#125;);
+            </div>
+          </div>
+
+          {/* Section 4: User Flow Guide & Diagram */}
+          <div className="flex flex-col gap-6">
+            <h3 className="text-lg font-bold tracking-wide text-white/80 uppercase">4. User Flow &amp; Tutorial</h3>
+            
+            {/* SVG Flow diagram - strictly capsule and circles, no boxes */}
+            <div className="w-full flex justify-center py-6 overflow-x-auto">
+              <svg width="680" height="120" viewBox="0 0 680 120" className="min-w-[600px]">
+                {/* Step 1: Input */}
+                <g transform="translate(10, 20)">
+                  <rect x="0" y="0" width="120" height="50" rx="25" fill="rgba(59, 130, 246, 0.1)" stroke="#3B82F6" strokeWidth="1.5" />
+                  <text x="60" y="24" textAnchor="middle" fill="#93C5FD" fontSize="10" fontWeight="bold">1. USER INPUT</text>
+                  <text x="60" y="38" textAnchor="middle" fill="#60A5FA" fontSize="8">Select Biller &amp; ID</text>
+                </g>
+
+                {/* Arrow 1 */}
+                <path d="M 140 45 L 180 45" fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth="1.5" markerEnd="url(#arrow-dark)" />
+
+                {/* Step 2: Quote */}
+                <g transform="translate(190, 20)">
+                  <rect x="0" y="0" width="120" height="50" rx="25" fill="rgba(168, 85, 247, 0.1)" stroke="#A855F7" strokeWidth="1.5" />
+                  <text x="60" y="24" textAnchor="middle" fill="#D8B4FE" fontSize="10" fontWeight="bold">2. FETCH QUOTE</text>
+                  <text x="60" y="38" textAnchor="middle" fill="#C084FC" fontSize="8">Exchange Rate Locked</text>
+                </g>
+
+                {/* Arrow 2 */}
+                <path d="M 320 45 L 360 45" fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth="1.5" markerEnd="url(#arrow-dark)" />
+
+                {/* Step 3: Lock */}
+                <g transform="translate(370, 20)">
+                  <rect x="0" y="0" width="120" height="50" rx="25" fill="rgba(245, 158, 11, 0.1)" stroke="#F59E0B" strokeWidth="1.5" />
+                  <text x="60" y="24" textAnchor="middle" fill="#FDE047" fontSize="10" fontWeight="bold">3. LOCK USDC</text>
+                  <text x="60" y="38" textAnchor="middle" fill="#FACC15" fontSize="8">Locked in Escrow</text>
+                </g>
+
+                {/* Arrow 3 */}
+                <path d="M 500 45 L 540 45" fill="none" stroke="rgba(255,255,255,0.15)" strokeWidth="1.5" markerEnd="url(#arrow-dark)" />
+
+                {/* Step 4: Settle */}
+                <g transform="translate(550, 20)">
+                  <rect x="0" y="0" width="120" height="50" rx="25" fill="rgba(16, 185, 129, 0.1)" stroke="#10B981" strokeWidth="1.5" />
+                  <text x="60" y="24" textAnchor="middle" fill="#A7F3D0" fontSize="10" fontWeight="bold">4. SETTLEMENT</text>
+                  <text x="60" y="38" textAnchor="middle" fill="#34D399" fontSize="8">UPI Paid &amp; Settled</text>
+                </g>
+
+                <defs>
+                  <marker id="arrow-dark" viewBox="0 0 10 10" refX="6" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse">
+                    <path d="M 0 1.5 L 8 5 L 0 8.5 z" fill="rgba(255,255,255,0.3)" />
+                  </marker>
+                </defs>
+              </svg>
+            </div>
+
+            <div className="flex flex-col gap-4 font-light text-xs text-white/70">
+              <p>
+                <strong>Step 1: Account Login &amp; Operator Details</strong><br/>
+                Connect your social login (Google) to initialize your smart account. Navigate to the billing section, select a biller category, pick your operator, and input your consumer number.
+              </p>
+              <p>
+                <strong>Step 2: Fetching Quote</strong><br/>
+                The system fetches the outstanding payment amount and performs an exchange calculation to determine the required USDC.
+              </p>
+              <p>
+                <strong>Step 3: Escrow Locking</strong><br/>
+                Review and execute the transaction to deposit and lock the USDC into the P2P.me Diamond Contract.
+              </p>
+              <p>
+                <strong>Step 4: Merchant Settlement</strong><br/>
+                A matched peer merchant initiates local currency payout to the provider. Upon success, the locked USDC is released, and your receipt is registered.
+              </p>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* ── SECTION 3: SECURITY ── */}
       <section id="security" className="relative min-h-[60vh] w-full bg-black flex flex-col items-center justify-center px-8 py-24">
         <div className="absolute inset-0 bg-gradient-to-b from-black via-black/95 to-black pointer-events-none" />

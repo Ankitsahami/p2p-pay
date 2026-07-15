@@ -129,7 +129,7 @@ export const useUserStore = create<UserState>()(
       },
     }),
     {
-      name: 'cryptobill-user',
+      name: 'p2p-pay-user',
       storage: createJSONStorage(() => localStorage),
     }
   )

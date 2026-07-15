@@ -232,7 +232,7 @@ export const PaymentService = {
           const localData = typeof window !== 'undefined' ? localStorage.getItem(key) : null;
           const localTxs = localData ? JSON.parse(localData) : [];
           
-          localTxs.push({
+          const newTx = {
             id: orderId,
             type: 'bill_payment',
             category: billDetails.provider.category,
@@ -250,11 +250,21 @@ export const PaymentService = {
             timestamp: new Date().toISOString(),
             fee: '0.050000',
             completedIn: '12s',
-          });
+          };
+          
+          localTxs.push(newTx);
           
           if (typeof window !== 'undefined') {
             localStorage.setItem(key, JSON.stringify(localTxs));
           }
+
+          // Save to DB via API
+          const origin = typeof window !== 'undefined' ? window.location.origin : '';
+          await fetch(`${origin}/api/transactions`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(newTx),
+          });
         } catch (saveErr) {
           console.error('Error saving payment transaction:', saveErr);
         }
@@ -291,7 +301,7 @@ export const PaymentService = {
       const localData = typeof window !== 'undefined' ? localStorage.getItem(key) : null;
       const localTxs = localData ? JSON.parse(localData) : [];
       
-      localTxs.push({
+      const newTx = {
         id: orderId,
         type: 'bill_payment',
         category: billDetails.provider.category,
@@ -305,11 +315,21 @@ export const PaymentService = {
         status: 'pending',
         walletAddress,
         timestamp: new Date().toISOString(),
-      });
+      };
+
+      localTxs.push(newTx);
       
       if (typeof window !== 'undefined') {
         localStorage.setItem(key, JSON.stringify(localTxs));
       }
+
+      // Save to DB via API
+      const origin = typeof window !== 'undefined' ? window.location.origin : '';
+      await fetch(`${origin}/api/transactions`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newTx),
+      });
     } catch (saveErr) {
       console.error('Error saving mock payment transaction:', saveErr);
     }
@@ -486,7 +506,7 @@ export const PaymentService = {
 
       onStatusChange(status);
 
-      // Update transaction status in localStorage
+      // Update transaction status in localStorage/DB
       try {
         const walletAddress = (order as any).walletAddress || (order as any).recipientAddr || '';
         if (walletAddress) {
@@ -500,9 +520,21 @@ export const PaymentService = {
               localStorage.setItem(key, JSON.stringify(localTxs));
             }
           }
+
+          // Save to DB via API
+          const origin = typeof window !== 'undefined' ? window.location.origin : '';
+          await fetch(`${origin}/api/transactions`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              id: order.orderId,
+              status: status,
+              walletAddress,
+            }),
+          });
         }
       } catch (updateErr) {
-        console.error('Error updating transaction status in localStorage:', updateErr);
+        console.error('Error updating transaction status in localStorage/DB:', updateErr);
       }
 
       return {
@@ -537,7 +569,7 @@ export const PaymentService = {
     // Stage 6: Finished
     onStatusChange('completed');
 
-    // Update mock transaction status in localStorage
+    // Update mock transaction status in localStorage/DB
     try {
       const walletAddress = (order as any).walletAddress || (order as any).recipientAddr || '';
       if (walletAddress) {
@@ -552,9 +584,22 @@ export const PaymentService = {
             localStorage.setItem(key, JSON.stringify(localTxs));
           }
         }
+
+        // Save to DB via API
+        const origin = typeof window !== 'undefined' ? window.location.origin : '';
+        await fetch(`${origin}/api/transactions`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            id: order.orderId,
+            status: 'completed',
+            txHash: mockTxHash,
+            walletAddress,
+          }),
+        });
       }
     } catch (updateErr) {
-      console.error('Error updating mock transaction status in localStorage:', updateErr);
+      console.error('Error updating mock transaction status in localStorage/DB:', updateErr);
     }
 
     const completedOrder: PaymentOrder = {

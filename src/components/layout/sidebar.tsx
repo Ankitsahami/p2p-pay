@@ -18,7 +18,8 @@ import {
   ArrowRight,
   Send,
   HelpCircle,
-  Coins
+  Coins,
+  BookOpen
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuth } from '@/hooks/use-auth';
@@ -40,6 +41,7 @@ export const Sidebar = ({ className }: SidebarProps) => {
     { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
     { label: 'Pay Bills', href: '/dashboard/pay', icon: Receipt },
     { label: 'Transactions', href: '/dashboard/history', icon: Clock },
+    { label: 'Documentation', href: '/dashboard/docs', icon: BookOpen },
     { label: 'Help & Support', href: '/dashboard/support', icon: HelpCircle },
     { label: 'Settings', href: '/dashboard/settings', icon: SettingsIcon },
   ];

@@ -1,7 +1,8 @@
 'use client';
 
 import * as React from 'react';
-import { Mail, HelpCircle, MessageCircle, Zap, Clock, ArrowRight } from 'lucide-react';
+import Link from 'next/link';
+import { Mail, HelpCircle, MessageCircle, Zap, Clock, ArrowRight, BookOpen } from 'lucide-react';
 import { useThemeStore } from '@/stores/theme-store';
 import { cn } from '@/lib/utils';
 
@@ -92,6 +93,27 @@ export default function SupportPage() {
           </div>
         ))}
       </div>
+
+      {/* Documentation Card */}
+      <Link href="/dashboard/docs" className="w-full max-w-md mb-6 block group">
+        <div className={cn(
+          "rounded-3xl p-6 border transition-all duration-300 flex items-center justify-between cursor-pointer",
+          isDark
+            ? "bg-white/[0.04] border-white/[0.08] hover:bg-white/[0.08] hover:border-white/20"
+            : "bg-white border-slate-100 shadow-lg shadow-slate-100/50 hover:border-slate-200 hover:shadow-xl hover:shadow-slate-100/80"
+        )}>
+          <div className="flex items-center gap-4">
+            <div className="w-10 h-10 rounded-xl bg-blue-500/10 border border-blue-500/20 flex items-center justify-center text-blue-500 flex-shrink-0 group-hover:scale-105 duration-350 transition-transform">
+              <BookOpen className="w-5 h-5" />
+            </div>
+            <div className="text-left">
+              <h3 className={cn("text-sm font-extrabold", isDark ? "text-white" : "text-slate-800")}>Project Documentation</h3>
+              <p className={cn("text-[10px] mt-0.5", isDark ? "text-white/40" : "text-slate-500")}>Introduction, P2P SDK guide &amp; user tutorials</p>
+            </div>
+          </div>
+          <ArrowRight className="w-4 h-4 text-slate-400 group-hover:text-blue-500 group-hover:translate-x-1 duration-200 transition-all" />
+        </div>
+      </Link>
 
       {/* Contact card */}
       <div className={cn(

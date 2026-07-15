@@ -26,6 +26,11 @@ export default function DashboardLayout({
     }
   }, [ready, isAuthenticated, router]);
 
+  // Clean up dark mode from landing page
+  React.useEffect(() => {
+    document.documentElement.classList.remove('dark');
+  }, []);
+
   // Fetch balances when wallet address is available
   React.useEffect(() => {
     if (walletAddress) {

@@ -79,28 +79,7 @@ export const Header = ({ title }: HeaderProps) => {
           Sepolia Testnet
         </span>
 
-        {/* ── Day/Night Toggle ── */}
-        <button
-          onClick={toggleTheme}
-          title={isDark ? 'Switch to Day Mode' : 'Switch to Night Mode'}
-          className={cn(
-            'relative w-14 h-7 rounded-full border transition-all duration-300 flex items-center cursor-pointer flex-shrink-0',
-            isDark
-              ? 'bg-slate-800 border-white/10'
-              : 'bg-slate-100 border-slate-200'
-          )}
-        >
-          {/* Track icons */}
-          <Sun className={cn('absolute left-1.5 w-3.5 h-3.5 transition-all duration-300', isDark ? 'opacity-30 text-slate-400' : 'opacity-100 text-amber-500')} />
-          <Moon className={cn('absolute right-1.5 w-3.5 h-3.5 transition-all duration-300', isDark ? 'opacity-100 text-blue-400' : 'opacity-30 text-slate-400')} />
-          {/* Thumb */}
-          <span className={cn(
-            'absolute w-5 h-5 rounded-full shadow-md transition-all duration-300',
-            isDark
-              ? 'right-1 bg-white'
-              : 'left-1 bg-white'
-          )} />
-        </button>
+
 
         {/* Notifications */}
         <div ref={notifRef} className="relative">

@@ -112,6 +112,13 @@ export default function LandingPage() {
   const { login, isAuthenticated } = useAuth();
   const [showInfo, setShowInfo] = useState(false);
 
+  useEffect(() => {
+    document.documentElement.classList.add('dark');
+    return () => {
+      document.documentElement.classList.remove('dark');
+    };
+  }, []);
+
   const scrollTo = (id: string) => {
     document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' });
   };

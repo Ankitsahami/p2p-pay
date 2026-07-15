@@ -35,18 +35,15 @@ export const metadata: Metadata = {
 
 import { initDb } from '@/lib/db';
 
-// Inline script to apply theme before first paint (prevents flash)
 const themeInitScript = `
 (function() {
   try {
     var stored = localStorage.getItem('p2p-pay-theme');
-    var theme = stored ? JSON.parse(stored).state?.theme : 'dark';
-    if (theme !== 'light') {
+    var theme = stored ? JSON.parse(stored).state?.theme : 'light';
+    if (theme === 'dark') {
       document.documentElement.classList.add('dark');
     }
-  } catch(e) {
-    document.documentElement.classList.add('dark');
-  }
+  } catch(e) {}
 })();
 `;
 

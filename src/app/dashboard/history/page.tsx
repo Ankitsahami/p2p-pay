@@ -63,13 +63,7 @@ export default function HistoryPage() {
 
   const filteredTransactions = React.useMemo(() => {
     return transactions.filter((tx) => {
-      // 1. Hide pending bill_payment transactions — they are still in escrow flow.
-      //    Only show bill_payments once they are fully settled (status = 'completed').
-      if (tx.type === 'bill_payment' && tx.status !== 'completed') {
-        return false;
-      }
-
-      // 2. Tab category filter match
+      // Tab category filter match
       const tabMatch = activeTab === 'all' || tx.type === activeTab;
       
       // 3. Search match

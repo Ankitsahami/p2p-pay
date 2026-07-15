@@ -37,7 +37,7 @@ export const Sidebar = ({ className }: SidebarProps) => {
     { label: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
     { label: 'Pay Bills', href: '/dashboard/pay', icon: Receipt },
     { label: 'Transactions', href: '/dashboard/history', icon: Clock },
-    { label: 'Help & Support', href: '#support', icon: HelpCircle },
+    { label: 'Help & Support', href: '/dashboard/support', icon: HelpCircle },
     { label: 'Settings', href: '/dashboard/settings', icon: SettingsIcon },
   ];
 

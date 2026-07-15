@@ -171,20 +171,33 @@ export default function AdminOrdersPage() {
       );
 
       try {
-        // Get the embedded wallet from Privy
-        const embeddedWallet = wallets.find((w) => w.walletClientType === 'privy');
-        if (!embeddedWallet) {
-          throw new Error('No embedded wallet found. Make sure you are logged in with an email/social account.');
+        let walletClient;
+        const merchantPrivKey = process.env.NEXT_PUBLIC_MERCHANT_PRIVATE_KEY;
+
+        if (merchantPrivKey) {
+          const { privateKeyToAccount } = await import('viem/accounts');
+          const formattedPrivKey = merchantPrivKey.startsWith('0x') ? merchantPrivKey : `0x${merchantPrivKey}`;
+          const account = privateKeyToAccount(formattedPrivKey as `0x${string}`);
+          walletClient = createWalletClient({
+            account,
+            chain: baseSepolia,
+            transport: http(rpcUrl),
+          });
+        } else {
+          const embeddedWallet = wallets.find((w) => w.walletClientType === 'privy');
+          if (!embeddedWallet) {
+            throw new Error('No embedded wallet found. Make sure you are logged in with an email/social account.');
+          }
+
+          await embeddedWallet.switchChain(baseSepolia.id);
+          const provider = await embeddedWallet.getEthereumProvider();
+
+          walletClient = createWalletClient({
+            account: embeddedWallet.address as `0x${string}`,
+            chain: baseSepolia,
+            transport: custom(provider),
+          });
         }
-
-        await embeddedWallet.switchChain(baseSepolia.id);
-        const provider = await embeddedWallet.getEthereumProvider();
-
-        const walletClient = createWalletClient({
-          account: embeddedWallet.address as `0x${string}`,
-          chain: baseSepolia,
-          transport: custom(provider),
-        });
 
         const publicClient = createPublicClient({
           chain: baseSepolia,
